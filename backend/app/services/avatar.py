@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import html
 import re
-from typing import Optional
+from typing import Iterator, Optional
 from urllib.parse import unquote
 
 from sqlalchemy.orm import Session
@@ -59,7 +59,10 @@ def _bucket_key_from_avatar_url(raw: str) -> Optional[str]:
     if marker in value:
         key = unquote(value.split(marker, 1)[1])
         return key.lstrip("/") or None
-    return None
+    # Bare MinIO/object bucket key (not an external URL)
+    if value.startswith(("http://", "https://")):
+        return None
+    return value.lstrip("/") or None
 
 
 def _read_object(bucket_key: str) -> Optional[tuple[bytes, str]]:
@@ -75,9 +78,24 @@ def _read_object(bucket_key: str) -> Optional[tuple[bytes, str]]:
         obj.release_conn()
 
 
-def _resolve_bucket_key(db: Session, user: User, profile: Optional[Profile]) -> Optional[str]:
+def _iter_bucket_keys(
+    db: Session, user: User, profile: Optional[Profile]
+) -> Iterator[str]:
+    """Yield candidate object keys in priority order, de-duplicated.
+
+    Order: profile.avatar_key → latest MediaAsset(purpose=avatar) →
+    primary card fields.avatar. Callers must try each key (open/read);
+    a failed read must continue to the next source, not skip to placeholder.
+    """
+    seen: set[str] = set()
+
+    def _emit(key: Optional[str]) -> Iterator[str]:
+        if key and key not in seen:
+            seen.add(key)
+            yield key
+
     if profile and profile.avatar_key:
-        return profile.avatar_key
+        yield from _emit(profile.avatar_key)
 
     asset = (
         db.query(MediaAsset)
@@ -86,10 +104,10 @@ def _resolve_bucket_key(db: Session, user: User, profile: Optional[Profile]) -> 
         .first()
     )
     if asset is not None:
-        return asset.bucket_key
+        yield from _emit(asset.bucket_key)
 
     if profile is None:
-        return None
+        return
 
     card = (
         db.query(Card)
@@ -97,12 +115,11 @@ def _resolve_bucket_key(db: Session, user: User, profile: Optional[Profile]) -> 
         .first()
     )
     if card is None:
-        return None
+        return
     fields = card.fields or {}
     avatar = fields.get("avatar")
     if isinstance(avatar, str):
-        return _bucket_key_from_avatar_url(avatar)
-    return None
+        yield from _emit(_bucket_key_from_avatar_url(avatar))
 
 
 def resolve_avatar(db: Session, email: str, size: int) -> tuple[bytes, str]:
@@ -122,8 +139,7 @@ def resolve_avatar(db: Session, email: str, size: int) -> tuple[bytes, str]:
     )
     label = (profile.display_name if profile and profile.display_name else None) or email_norm
 
-    bucket_key = _resolve_bucket_key(db, user, profile)
-    if bucket_key:
+    for bucket_key in _iter_bucket_keys(db, user, profile):
         loaded = _read_object(bucket_key)
         if loaded is not None:
             return loaded
