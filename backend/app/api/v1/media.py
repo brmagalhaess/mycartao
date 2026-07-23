@@ -76,18 +76,16 @@ async def upload_media(
     if not data:
         raise AppError("Arquivo vazio", "empty_file", status_code=400)
 
+    # Avatar is free for all plans (including replace). Free keeps one active
+    # avatar_key on the profile; Pro may accumulate uploads as a simple gallery.
     if purpose == "avatar" and user.plan not in PRO_PLANS:
-        exists = (
+        old_assets = (
             db.query(MediaAsset)
             .filter(MediaAsset.owner_id == user.id, MediaAsset.purpose == "avatar")
-            .first()
+            .all()
         )
-        if exists is not None:
-            raise AppError(
-                "Limite de avatar do plano Free atingido",
-                "avatar_limit_reached",
-                status_code=403,
-            )
+        for old in old_assets:
+            db.delete(old)
 
     ext = {
         "image/jpeg": "jpg",

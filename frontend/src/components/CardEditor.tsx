@@ -187,11 +187,7 @@ export default function CardEditor({ cardId }: Props) {
           detail?: string;
           code?: string;
         } | null;
-        setError(
-          data?.code === "avatar_limit_reached"
-            ? "Limite de avatar do plano Free atingido."
-            : (data?.detail ?? "Falha no upload do avatar."),
-        );
+        setError(data?.detail ?? "Falha no upload do avatar.");
         return;
       }
 

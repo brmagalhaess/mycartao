@@ -51,7 +51,8 @@ def test_serve_media_file_proxies_minio():
     mock_obj.release_conn.assert_called_once()
 
 
-def test_free_avatar_limit(auth_client_free, png_bytes):
+def test_free_can_replace_avatar(auth_client_free, png_bytes):
+    """Free may change avatar anytime (replace), not locked after first upload."""
     with patch(
         "app.api.v1.media.minio_client.upload_bytes",
         side_effect=_fake_upload,
@@ -62,13 +63,15 @@ def test_free_avatar_limit(auth_client_free, png_bytes):
             data={"purpose": "avatar"},
         )
         assert first.status_code == 201
+        first_url = first.json()["url"]
         second = auth_client_free.post(
             "/api/v1/media/upload",
             files={"file": ("b.png", png_bytes, "image/png")},
             data={"purpose": "avatar"},
         )
-    assert second.status_code == 403
-    assert second.json()["code"] == "avatar_limit_reached"
+    assert second.status_code == 201
+    assert second.json()["url"].startswith("/api/v1/media/files/")
+    assert second.json()["url"] != first_url
 
 
 def test_reject_invalid_mime(auth_client_free):

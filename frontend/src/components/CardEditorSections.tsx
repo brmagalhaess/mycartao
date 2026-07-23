@@ -75,7 +75,7 @@ export function ProfileSection({
       </label>
 
       <div>
-        <p className="text-sm font-medium text-ink-soft">Avatar</p>
+        <p className="text-sm font-medium text-ink-soft">Avatar (grátis)</p>
         {avatarPreview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -93,6 +93,9 @@ export function ProfileSection({
           onChange={(e) => onUpload(e.target.files?.[0] ?? null)}
           className="mt-3 block w-full text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-teal file:px-3 file:py-2 file:text-sm file:font-semibold file:text-paper"
         />
+        <p className="mt-2 text-xs text-ink-soft">
+          JPEG, PNG ou WebP até 5MB. Pode trocar a foto quando quiser.
+        </p>
         {uploading ? (
           <p className="mt-2 text-sm text-ink-soft">Enviando…</p>
         ) : null}
