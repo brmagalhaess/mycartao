@@ -16,6 +16,7 @@ Implementar autenticação por magic link (e-mail via Brevo), cookie JWT `access
 5. Rate limit in-memory: 5 pedidos / e-mail / 15 min → `429` + `rate_limited`.
 6. Brevo: sem API key → log `[brevo-dev]` do link (dev).
 7. `conftest` estendido: limpa rate limit e tabelas entre testes (SQLite shared).
+8. **Review harden:** `GET /whoami`; falha Brevo → `502 email_send_failed` + delete do token; testes de expiração e cookie JWT.
 
 ## Arquivos e utilidade
 
@@ -24,19 +25,20 @@ Implementar autenticação por magic link (e-mail via Brevo), cookie JWT `access
 | `backend/app/core/security.py` | Hash de token, encode/decode JWT HS256 |
 | `backend/app/core/rate_limit.py` | Contador in-memory por chave (janela 15 min) |
 | `backend/app/services/brevo.py` | Envio de e-mail magic link (ou log em dev) |
-| `backend/app/services/auth.py` | Criar/verificar magic link; user + profile |
+| `backend/app/services/auth.py` | Criar/verificar magic link; rollback token se Brevo falhar |
 | `backend/app/schemas/auth.py` | Request/response Pydantic (`MagicLinkRequest`, `UserResponse`) |
-| `backend/app/api/v1/auth.py` | Rotas magic-link, verify, logout + cookies |
+| `backend/app/api/v1/auth.py` | Rotas magic-link, verify, whoami, logout + cookies |
 | `backend/app/api/v1/__init__.py` | Agrega routers sob `/api/v1` |
 | `backend/app/deps.py` | `get_db` + `get_current_user` (cookie JWT) |
 | `backend/app/main.py` | Inclui `api_router` com prefixo `/api/v1` |
-| `backend/tests/test_auth_magic_link.py` | Fluxo, uso único, logout, rate limit |
+| `backend/tests/test_auth_magic_link.py` | Fluxo, expiração, whoami, Brevo fail, logout, rate limit |
 | `backend/tests/conftest.py` | Isolamento SQLite + reset rate limit |
 
 ## Endpoints
 
-- `POST /api/v1/auth/magic-link` `{email}` → `{ok: true}`
+- `POST /api/v1/auth/magic-link` `{email}` → `{ok: true}` (ou `502 email_send_failed`)
 - `GET /api/v1/auth/verify?token=` → cookie `access_token` + user JSON
+- `GET /api/v1/auth/whoami` → user autenticado (id/email/plan) via cookie JWT
 - `POST /api/v1/auth/logout` → limpa cookie
 
 ## Verificação

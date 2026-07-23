@@ -7,6 +7,8 @@ from app.config import settings
 from app.core.errors import AppError
 from app.core.rate_limit import check_rate_limit
 from app.db import get_db
+from app.deps import get_current_user
+from app.models.user import User
 from app.schemas.auth import MagicLinkRequest, OkResponse, UserResponse
 from app.services import auth as auth_service
 
@@ -58,6 +60,12 @@ def request_magic_link(body: MagicLinkRequest, db: Session = Depends(get_db)):
 def verify_magic_link(token: str, response: Response, db: Session = Depends(get_db)):
     user, jwt_token = auth_service.verify_magic_link(db, token)
     _set_access_cookie(response, jwt_token)
+    return user
+
+
+@router.get("/whoami", response_model=UserResponse)
+def whoami(user: User = Depends(get_current_user)):
+    """Return the authenticated user (id/email/plan) from the JWT cookie."""
     return user
 
 

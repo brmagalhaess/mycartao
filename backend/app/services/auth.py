@@ -17,7 +17,10 @@ MAGIC_LINK_TTL = timedelta(minutes=15)
 
 
 def create_magic_link(db: Session, email: str) -> str:
-    """Create a magic link token, persist its hash, send email. Returns raw token."""
+    """Create a magic link token, persist its hash, send email. Returns raw token.
+
+    On email send failure the token row is deleted so no usable orphan remains.
+    """
     email_norm = email.strip().lower()
     raw = secrets.token_urlsafe(32)
     token_hash = hash_token(raw)
@@ -30,7 +33,17 @@ def create_magic_link(db: Session, email: str) -> str:
     db.commit()
 
     link = f"{settings.public_app_url.rstrip('/')}/auth/verify?token={raw}"
-    send_magic_link_email(email_norm, link)
+    try:
+        send_magic_link_email(email_norm, link)
+    except Exception as exc:
+        # Rollback usable orphan: delete by hash (session may have expired the row).
+        db.query(MagicLinkToken).filter(MagicLinkToken.token_hash == token_hash).delete()
+        db.commit()
+        raise AppError(
+            "Falha ao enviar e-mail de acesso",
+            "email_send_failed",
+            status_code=502,
+        ) from exc
     return raw
 
 
