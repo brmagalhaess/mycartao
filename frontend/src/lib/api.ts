@@ -1,5 +1,6 @@
+/** Empty = same-origin (recommended). Avoids localhost / cross-app browser prompts. */
 export const API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
+  process.env.NEXT_PUBLIC_API_URL ?? ""
 ).replace(/\/$/, "");
 
 export async function apiFetch(

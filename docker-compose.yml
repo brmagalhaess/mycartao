@@ -71,11 +71,13 @@ services:
     build:
       context: ./frontend
       args:
-        # URL pública da API (domínio do backend no Dokploy)
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        # Browser uses same-origin /api (empty). Do NOT set localhost here.
+        NEXT_PUBLIC_API_URL: ""
+        INTERNAL_API_URL: http://backend:8000
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    # Só porta do container — Dokploy/Traefik faz o roteamento (evita "port already allocated")
+      INTERNAL_API_URL: http://backend:8000
+      # Keep empty so client never calls a second host
+      NEXT_PUBLIC_API_URL: ""
     expose:
       - "3000"
     depends_on:

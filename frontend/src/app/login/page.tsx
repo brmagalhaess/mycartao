@@ -39,7 +39,9 @@ export default function LoginPage() {
       );
     } catch {
       setStatus("error");
-      setMessage("Falha de rede. Verifique se a API está no ar.");
+      setMessage(
+        "Não foi possível falar com o servidor. Atualize a página e tente de novo.",
+      );
     }
   }
 
