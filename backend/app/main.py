@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import api_router
 from app.config import settings
 from app.core.errors import AppError, app_error_handler
+from app.db import SessionLocal
+from app.services import plans as plans_service
 from app.services.minio_client import ensure_bucket
 
 
@@ -15,6 +17,20 @@ async def lifespan(_app: FastAPI):
         ensure_bucket()
     except Exception:
         # MinIO may be down in local/dev without compose; upload will fail later.
+        pass
+    try:
+        db = SessionLocal()
+        try:
+            plans_service.ensure_pro_plan(
+                db,
+                stripe_product_id="prod_Uw55NojMDnsE1j",
+                stripe_price_id=settings.stripe_price_pro
+                or "price_1TwCvV2Q9dtE625NdexKumxU",
+            )
+        finally:
+            db.close()
+    except Exception:
+        # DB may be unavailable during image build health; migrate seeds on boot.
         pass
     yield
 

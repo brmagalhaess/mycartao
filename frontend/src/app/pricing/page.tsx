@@ -78,9 +78,9 @@ export default function PricingPage() {
                 Pro
               </h2>
               <p className="mt-2 text-3xl font-semibold tracking-tight">
-                Sob consulta
+                R$&nbsp;19,90
                 <span className="ml-1 text-base font-normal text-ink-soft">
-                  via Stripe
+                  /mês
                 </span>
               </p>
               <ul className="mt-6 space-y-2.5 text-ink-soft">

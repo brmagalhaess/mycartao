@@ -16,7 +16,7 @@ ACTIVE_STATUSES = frozenset({"active", "trialing"})
 
 
 def _require_stripe_api() -> None:
-    if not settings.stripe_secret_key or not settings.stripe_price_pro:
+    if not settings.stripe_secret_key:
         raise AppError(
             "Billing Stripe não configurado",
             "billing_not_configured",
@@ -25,9 +25,42 @@ def _require_stripe_api() -> None:
     stripe.api_key = settings.stripe_secret_key
 
 
-def create_checkout_session(db: Session, user: User) -> str:
+def _resolve_price_id(db: Session, plan_id: UUID | None = None) -> tuple[str, str]:
+    """Return (stripe_price_id, plan_code)."""
+    from app.models.plan import Plan
+    from app.services import plans as plans_service
+
+    plan = None
+    if plan_id:
+        plan = plans_service.get_plan(db, plan_id)
+        if not plan.is_active or not plan.stripe_price_id:
+            raise AppError(
+                "Plano indisponível para checkout",
+                "plan_unavailable",
+                status_code=400,
+            )
+    else:
+        plan = plans_service.get_default_checkout_plan(db)
+
+    if plan and plan.stripe_price_id:
+        return plan.stripe_price_id, plan.code
+
+    if settings.stripe_price_pro:
+        return settings.stripe_price_pro, "pro"
+
+    raise AppError(
+        "Nenhum preço Stripe configurado",
+        "billing_not_configured",
+        status_code=503,
+    )
+
+
+def create_checkout_session(
+    db: Session, user: User, plan_id: UUID | None = None
+) -> str:
     """Create a Stripe Checkout Session (subscription) and return its URL."""
     _require_stripe_api()
+    price_id, plan_code = _resolve_price_id(db, plan_id)
 
     customer_id = user.stripe_customer_id
     if not customer_id:
@@ -43,11 +76,13 @@ def create_checkout_session(db: Session, user: User) -> str:
     session = stripe.checkout.Session.create(
         mode="subscription",
         customer=customer_id,
-        line_items=[{"price": settings.stripe_price_pro, "quantity": 1}],
+        line_items=[{"price": price_id, "quantity": 1}],
         success_url=f"{base}/app/billing?success=1",
         cancel_url=f"{base}/app/billing?canceled=1",
-        metadata={"user_id": str(user.id)},
-        subscription_data={"metadata": {"user_id": str(user.id)}},
+        metadata={"user_id": str(user.id), "plan_code": plan_code},
+        subscription_data={
+            "metadata": {"user_id": str(user.id), "plan_code": plan_code}
+        },
         client_reference_id=str(user.id),
     )
     url = session["url"] if isinstance(session, dict) else session.url
@@ -133,10 +168,13 @@ def _upsert_subscription(
     return row
 
 
-def _apply_plan(user: User, status: str) -> None:
+def _apply_plan(user: User, status: str, plan_code: str | None = None) -> None:
     if user.plan == "admin":
         return
-    user.plan = "pro" if status in ACTIVE_STATUSES else "free"
+    if status in ACTIVE_STATUSES:
+        user.plan = plan_code or "pro"
+    else:
+        user.plan = "free"
 
 
 def handle_checkout_completed(db: Session, obj: dict) -> None:
@@ -162,7 +200,8 @@ def handle_checkout_completed(db: Session, obj: dict) -> None:
             stripe_subscription_id=str(sub_id),
             status="active",
         )
-    user.plan = "pro" if user.plan != "admin" else user.plan
+    if user.plan != "admin":
+        user.plan = str(meta.get("plan_code") or "pro")
     db.commit()
 
 
@@ -190,7 +229,7 @@ def handle_subscription_updated(db: Session, obj: dict) -> None:
         status=status,
         current_period_end=obj.get("current_period_end"),
     )
-    _apply_plan(user, status)
+    _apply_plan(user, status, plan_code=meta.get("plan_code"))
     db.commit()
 
 
