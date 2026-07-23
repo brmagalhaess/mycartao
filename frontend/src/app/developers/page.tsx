@@ -1,77 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-
-type LangId = "html" | "javascript" | "nextjs" | "python" | "php" | "curl";
-
-const LANGS: { id: LangId; label: string }[] = [
-  { id: "html", label: "HTML" },
-  { id: "javascript", label: "JavaScript" },
-  { id: "nextjs", label: "Next.js" },
-  { id: "python", label: "Python" },
-  { id: "php", label: "PHP" },
-  { id: "curl", label: "cURL" },
-];
-
-function buildSnippets(origin: string): Record<LangId, string> {
-  const base = origin || "https://SEU_DOMINIO";
-  return {
-    html: `<img
-  src="${base}/api/v1/public/avatar?email=voce@email.com&s=200"
-  alt=""
-  width="200"
-  height="200"
-/>`,
-    javascript: `const origin = "${base}";
-const email = "voce@email.com";
-const url = \`\${origin}/api/v1/public/avatar?email=\${encodeURIComponent(email)}&s=200\`;
-
-const img = document.createElement("img");
-img.src = url;
-img.alt = "";
-img.width = 200;
-img.height = 200;
-document.body.appendChild(img);`,
-    nextjs: `// app/components/MyCartaoAvatar.tsx
-export function MyCartaoAvatar({ email }: { email: string }) {
-  const src = \`${base}/api/v1/public/avatar?email=\${encodeURIComponent(email)}&s=128\`;
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" width={128} height={128} className="rounded-full" />
-  );
-}`,
-    python: `import requests
-
-base = "${base}"
-email = "voce@email.com"
-resp = requests.get(
-    f"{base}/api/v1/public/avatar",
-    params={"email": email, "s": 200},
-)
-resp.raise_for_status()
-with open("avatar.bin", "wb") as f:
-    f.write(resp.content)`,
-    php: `<?php
-$base = '${base}';
-$email = 'voce@email.com';
-$url = $base.'/api/v1/public/avatar?email='.urlencode($email).'&s=200';
-$bytes = file_get_contents($url);
-file_put_contents('avatar.bin', $bytes);`,
-    curl: `BASE="${base}"
-curl -L "$BASE/api/v1/public/avatar?email=voce@email.com&s=200" -o avatar.bin`,
-  };
-}
+import { useEffect, useState } from "react";
+import AvatarCodeExamples from "@/components/AvatarCodeExamples";
 
 export default function DevelopersPage() {
-  const [lang, setLang] = useState<LangId>("html");
   const [origin, setOrigin] = useState("https://SEU_DOMINIO");
 
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
-
-  const snippets = useMemo(() => buildSnippets(origin), [origin]);
 
   return (
     <div className="atmosphere min-h-screen text-ink">
@@ -128,46 +66,22 @@ export default function DevelopersPage() {
               </code>
             </pre>
             <p className="mt-4 text-sm text-ink-soft">
-              Já tem conta?{" "}
+              Já tem conta? Entre e abra{" "}
               <Link
                 href="/app/api"
                 className="font-medium text-teal hover:text-teal-deep"
               >
-                Copie sua URL no painel →
-              </Link>
+                API Avatar
+              </Link>{" "}
+              no painel para copiar sua URL sem sair da sessão.
             </p>
           </section>
 
           <section className="animate-rise-delay-2 mt-14">
             <h2 className="font-display text-2xl font-semibold">Exemplos</h2>
-            <div
-              role="tablist"
-              aria-label="Linguagem do exemplo"
-              className="mt-6 flex flex-wrap gap-2"
-            >
-              {LANGS.map(({ id, label }) => {
-                const active = lang === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => setLang(id)}
-                    className={
-                      active
-                        ? "rounded-md bg-teal px-3.5 py-2 text-sm font-semibold text-paper"
-                        : "rounded-md border border-line bg-paper/60 px-3.5 py-2 text-sm font-medium text-ink-soft transition hover:border-teal/40 hover:text-teal"
-                    }
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            <div className="mt-6">
+              <AvatarCodeExamples origin={origin} />
             </div>
-            <pre className="mt-4 overflow-x-auto rounded-md border border-line bg-ink px-4 py-4 text-sm leading-relaxed text-paper">
-              <code>{snippets[lang]}</code>
-            </pre>
           </section>
 
           <p className="mt-14 text-sm text-ink-soft/75">

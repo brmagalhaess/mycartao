@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import AvatarCodeExamples from "@/components/AvatarCodeExamples";
 
 export default function AvatarApiPage() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function AvatarApiPage() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState("");
+  const [showExamples, setShowExamples] = useState(false);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -116,12 +118,14 @@ export default function AvatarApiPage() {
                 >
                   {copied ? "Copiado!" : "Copiar URL"}
                 </button>
-                <Link
-                  href="/developers"
+                <button
+                  type="button"
+                  onClick={() => setShowExamples((v) => !v)}
                   className="rounded-md border border-line bg-paper/70 px-4 py-2 text-sm font-medium text-ink transition hover:border-teal/40"
+                  aria-expanded={showExamples}
                 >
-                  Ver exemplos de código
-                </Link>
+                  {showExamples ? "Ocultar exemplos" : "Ver exemplos de código"}
+                </button>
               </div>
             </div>
           </div>
@@ -129,6 +133,21 @@ export default function AvatarApiPage() {
           <pre className="mt-8 overflow-x-auto rounded-md border border-line bg-ink/[0.03] p-4 text-xs leading-relaxed text-ink-soft">
             {`<img src="${avatarUrl}" alt="" width="200" height="200" />`}
           </pre>
+
+          {showExamples && origin ? (
+            <div className="mt-8">
+              <h3 className="text-sm font-semibold text-ink">
+                Exemplos (HTML, JS, Next.js, Python, PHP, cURL)
+              </h3>
+              <p className="mt-1 text-sm text-ink-soft">
+                Já com o seu domínio e e-mail. Você continua logado nesta
+                página.
+              </p>
+              <div className="mt-4">
+                <AvatarCodeExamples origin={origin} email={email} />
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
