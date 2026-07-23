@@ -1,7 +1,7 @@
 # MyCartao — Links custom, Avatar API, Smart UI e refresh visual
 
 **Data:** 2026-07-23  
-**Status:** Aguardando review do usuário  
+**Status:** Aprovado pelo usuário — plano em `docs/superpowers/plans/2026-07-23-links-avatar-api-ui.md`  
 **Escopo:** Avatar público por e-mail, links personalizados (Pro), UI Smart Card (Pro), página Developers, modernização de layout (app + público)
 
 ---
