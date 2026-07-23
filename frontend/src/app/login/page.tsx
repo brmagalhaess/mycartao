@@ -61,10 +61,10 @@ export default function LoginPage() {
         </header>
 
         <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 pb-16">
-          <h1 className="animate-rise font-display text-3xl font-semibold sm:text-4xl">
+          <h1 className="animate-rise font-display text-3xl font-semibold tracking-tight sm:text-4xl">
             Entrar com magic link
           </h1>
-          <p className="animate-rise-delay mt-3 text-ink-soft/90">
+          <p className="animate-rise-delay mt-3 max-w-md text-ink-soft/90">
             Sem senha. Enviamos um link único para o seu e-mail.
           </p>
 

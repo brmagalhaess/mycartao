@@ -12,10 +12,12 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   "Cartões ilimitados",
   "Slug personalizado",
+  "Links personalizados no cartão",
+  "Smart Card com regras",
   "Sem watermark + Print Kit",
   "Portfólio ilimitado",
   "Analytics 90 dias + export",
-  "Smart rules e sem branding",
+  "Sem branding MyCartao",
 ];
 
 export default function PricingPage() {

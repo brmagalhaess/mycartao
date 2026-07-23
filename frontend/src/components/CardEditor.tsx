@@ -9,22 +9,12 @@ import {
   parseCustomLinks,
 } from "@/lib/custom-links";
 import CustomLinksEditor from "@/components/CustomLinksEditor";
-
-const FIELD_KEYS = [
-  { key: "phone", label: "Telefone" },
-  { key: "whatsapp", label: "WhatsApp" },
-  { key: "email", label: "E-mail" },
-  { key: "company", label: "Empresa" },
-  { key: "website", label: "Site" },
-  { key: "linkedin", label: "LinkedIn" },
-  { key: "instagram", label: "Instagram" },
-] as const;
-
-const THEMES = [
-  { value: "minimal", label: "Minimal" },
-  { value: "classic", label: "Clássico" },
-  { value: "bold", label: "Bold" },
-] as const;
+import {
+  ContactsSection,
+  FIELD_KEYS,
+  ProfileSection,
+  ThemeSection,
+} from "@/components/CardEditorSections";
 
 type Card = {
   id: string;
@@ -325,9 +315,13 @@ export default function CardEditor({ cardId }: Props) {
               ← Cartões
             </Link>
           </p>
-          <h1 className="mt-2 font-display text-3xl font-semibold">
+          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
             Editar cartão
           </h1>
+          <p className="mt-2 max-w-md text-ink-soft">
+            Perfil, contatos, links Pro e tema — salve para atualizar o cartão
+            público.
+          </p>
         </div>
         <Link
           href={`/app/cards/${cardId}/qr`}
@@ -337,114 +331,52 @@ export default function CardEditor({ cardId }: Props) {
         </Link>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-8 max-w-xl space-y-5">
-        <label className="block text-sm font-medium text-ink-soft">
-          Título do cartão
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-          />
-        </label>
-
-        <label className="block text-sm font-medium text-ink-soft">
-          Nome de exibição
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-          />
-        </label>
-
-        <label className="block text-sm font-medium text-ink-soft">
-          Headline
-          <input
-            value={headline}
-            onChange={(e) => setHeadline(e.target.value)}
-            className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-            placeholder="Ex.: Designer · São Paulo"
-          />
-        </label>
-
-        <label className="block text-sm font-medium text-ink-soft">
-          Tema
-          <select
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-            className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-          >
-            {THEMES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div>
-          <p className="text-sm font-medium text-ink-soft">Avatar</p>
-          {avatarPreview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarPreview}
-              alt="Avatar"
-              className="mt-3 h-20 w-20 object-cover"
-            />
-          ) : (
-            <p className="mt-2 text-sm text-ink-soft/80">Nenhuma foto ainda.</p>
-          )}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            disabled={uploading}
-            onChange={(e) => onUpload(e.target.files?.[0] ?? null)}
-            className="mt-3 block w-full text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-teal file:px-3 file:py-2 file:text-sm file:font-semibold file:text-paper"
-          />
-          {uploading ? (
-            <p className="mt-2 text-sm text-ink-soft">Enviando…</p>
-          ) : null}
-        </div>
-
-        <fieldset className="space-y-4 border-t border-line pt-5">
-          <legend className="text-sm font-semibold text-ink">Contatos</legend>
-          {FIELD_KEYS.map(({ key, label }) => (
-            <label key={key} className="block text-sm font-medium text-ink-soft">
-              {label}
-              <input
-                value={fields[key] ?? ""}
-                onChange={(e) => updateField(key, e.target.value)}
-                className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-              />
-            </label>
-          ))}
-        </fieldset>
-
-        <CustomLinksEditor
-          links={customLinks}
-          onChange={setCustomLinks}
-          disabled={!isPro}
-          isPro={isPro}
+      <form onSubmit={onSubmit} className="mt-10 max-w-xl space-y-0">
+        <ProfileSection
+          title={title}
+          displayName={displayName}
+          headline={headline}
+          avatarPreview={avatarPreview}
+          uploading={uploading}
+          onTitle={setTitle}
+          onDisplayName={setDisplayName}
+          onHeadline={setHeadline}
+          onUpload={onUpload}
         />
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-md bg-teal px-5 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
-        >
-          {saving ? "Salvando…" : "Salvar alterações"}
-        </button>
+        <ContactsSection fields={fields} onUpdateField={updateField} />
 
-        {message ? (
-          <p role="status" className="text-sm text-teal-deep">
-            {message}
-          </p>
-        ) : null}
-        {error ? (
-          <p role="alert" className="text-sm text-red-800">
-            {error}
-          </p>
-        ) : null}
+        <div className="border-t border-line pt-8">
+          <CustomLinksEditor
+            links={customLinks}
+            onChange={setCustomLinks}
+            disabled={!isPro}
+            isPro={isPro}
+          />
+        </div>
+
+        <ThemeSection theme={theme} onTheme={setTheme} />
+
+        <div className="border-t border-line pt-8">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-md bg-teal px-5 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
+          >
+            {saving ? "Salvando…" : "Salvar alterações"}
+          </button>
+
+          {message ? (
+            <p role="status" className="mt-4 text-sm text-teal-deep">
+              {message}
+            </p>
+          ) : null}
+          {error ? (
+            <p role="alert" className="mt-4 text-sm text-red-800">
+              {error}
+            </p>
+          ) : null}
+        </div>
       </form>
     </div>
   );

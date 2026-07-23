@@ -99,10 +99,10 @@ export default function AppDashboardPage() {
     <main>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="animate-rise font-display text-3xl font-semibold sm:text-4xl">
+          <h1 className="animate-rise font-display text-3xl font-semibold tracking-tight sm:text-4xl">
             Seus cartões
           </h1>
-          <p className="animate-rise-delay mt-2 text-ink-soft">
+          <p className="animate-rise-delay mt-2 max-w-md text-ink-soft">
             Edite, compartilhe e gere QR / PDF de impressão.
           </p>
         </div>

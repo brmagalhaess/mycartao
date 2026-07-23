@@ -59,10 +59,11 @@ export default function CustomLinksEditor({
   }
 
   return (
-    <fieldset className="space-y-4 border-t border-line pt-5">
-      <legend className="text-sm font-semibold text-ink">
-        Links personalizados (Pro)
-      </legend>
+    <section className="space-y-4">
+      <h2 className="section-title">Links</h2>
+      <p className="text-sm text-ink-soft">
+        Botões personalizados no cartão público (Pro).
+      </p>
 
       {locked ? (
         <div className="rounded-md border border-line bg-paper/70 px-4 py-3 text-sm text-ink-soft">
@@ -107,7 +108,9 @@ export default function CustomLinksEditor({
                   <input
                     value={link.url}
                     onChange={(e) => updateAt(index, { url: e.target.value })}
-                    type="url"
+                    type="text"
+                    inputMode="url"
+                    autoComplete="url"
                     placeholder="https://"
                     className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
                   />
@@ -174,6 +177,6 @@ export default function CustomLinksEditor({
           </button>
         </>
       )}
-    </fieldset>
+    </section>
   );
 }

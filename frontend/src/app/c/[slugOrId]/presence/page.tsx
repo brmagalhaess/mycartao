@@ -61,6 +61,7 @@ export default function PresenceModePage() {
   const presenceLinks = card
     ? parseCustomLinks(card.fields).slice(0, 3)
     : [];
+  const displayName = card?.title?.trim() || "MyCartao";
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0c2a2e] text-paper">
@@ -71,7 +72,7 @@ export default function PresenceModePage() {
       <header className="relative z-10 flex items-center justify-between px-5 py-4 sm:px-8">
         <Link
           href={`/c/${slugOrId}`}
-          className="text-sm font-medium text-paper/70 transition hover:text-paper"
+          className="text-sm font-medium text-paper/65 transition hover:text-paper"
         >
           ← Voltar
         </Link>
@@ -80,7 +81,7 @@ export default function PresenceModePage() {
         </span>
       </header>
 
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-center gap-8 px-6 pb-12">
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-center gap-7 px-6 pb-14">
         {error ? (
           <p role="alert" className="text-sm text-red-200">
             {error}
@@ -88,30 +89,30 @@ export default function PresenceModePage() {
         ) : null}
 
         {!card && !error ? (
-          <p className="text-sm text-paper/60">Carregando…</p>
+          <p className="animate-fade text-sm text-paper/60">Carregando…</p>
         ) : null}
 
         {card ? (
           <>
-            <div className="animate-rise flex flex-col items-center gap-4">
+            <div className="animate-rise flex flex-col items-center gap-5">
               {avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatar}
                   alt=""
-                  className="h-36 w-36 rounded-full object-cover ring-4 ring-sand/40 sm:h-44 sm:w-44"
+                  className="h-40 w-40 rounded-full object-cover ring-4 ring-sand/45 sm:h-48 sm:w-48"
                 />
               ) : (
-                <div className="flex h-36 w-36 items-center justify-center rounded-full bg-teal/40 font-display text-5xl sm:h-44 sm:w-44">
-                  {(card.title || "?").slice(0, 1).toUpperCase()}
+                <div className="flex h-40 w-40 items-center justify-center rounded-full bg-teal/40 font-display text-5xl sm:h-48 sm:w-48">
+                  {displayName.slice(0, 1).toUpperCase()}
                 </div>
               )}
-              <h1 className="text-center font-display text-3xl font-semibold sm:text-4xl">
-                {card.title}
+              <h1 className="max-w-md text-center font-display text-3xl font-semibold tracking-tight sm:text-5xl">
+                {displayName}
               </h1>
             </div>
 
-            <div className="animate-rise-delay flex h-52 w-52 items-center justify-center rounded-lg bg-paper p-3 sm:h-64 sm:w-64">
+            <div className="animate-rise-delay flex h-52 w-52 items-center justify-center bg-paper p-3 sm:h-64 sm:w-64">
               {qrDataUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -126,7 +127,7 @@ export default function PresenceModePage() {
 
             <a
               href={`/api/v1/public/cards/${slugOrId}/vcard.vcf`}
-              className="animate-rise-delay-2 inline-flex items-center justify-center rounded-md bg-sand px-6 py-3 text-base font-semibold text-ink transition hover:bg-sand-warm"
+              className="animate-rise-delay-2 inline-flex items-center justify-center rounded-md bg-sand px-7 py-3.5 text-base font-semibold text-ink transition hover:bg-sand-warm"
             >
               Salvar contato
             </a>
@@ -134,7 +135,7 @@ export default function PresenceModePage() {
             {presenceLinks.length > 0 ? (
               <nav
                 aria-label="Links rápidos"
-                className="animate-rise-delay-2 flex flex-col items-center gap-2"
+                className="animate-rise-delay-2 flex flex-col items-center gap-3"
               >
                 {presenceLinks.map((link) => (
                   <a
@@ -142,7 +143,7 @@ export default function PresenceModePage() {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium text-paper/80 underline-offset-4 transition hover:text-sand hover:underline"
+                    className="text-sm font-medium tracking-wide text-sand/90 underline-offset-4 transition hover:text-sand hover:underline"
                   >
                     {link.title}
                   </a>

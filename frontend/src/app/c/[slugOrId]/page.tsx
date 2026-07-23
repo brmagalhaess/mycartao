@@ -54,16 +54,23 @@ export default function PublicCardPage() {
   }, [slugOrId]);
 
   const avatar = card ? toMediaSrc(fieldStr(card.fields, "avatar")) : "";
+  const company = card ? fieldStr(card.fields, "company") : "";
   const visibleFields = card
-    ? Object.keys(FIELD_LABELS).filter((k) => fieldStr(card.fields, k))
+    ? Object.keys(FIELD_LABELS).filter(
+        (k) => k !== "company" && fieldStr(card.fields, k),
+      )
     : [];
   const customLinks = card ? parseCustomLinks(card.fields) : [];
+  const displayName = card?.title?.trim() || "MyCartao";
 
   return (
     <div className="atmosphere min-h-screen text-ink">
       <div className="atmosphere-pattern min-h-screen">
         <header className="mx-auto flex w-full max-w-lg items-center justify-between px-6 py-5">
-          <Link href="/" className="font-display text-lg font-semibold">
+          <Link
+            href="/"
+            className="font-display text-lg font-semibold tracking-tight"
+          >
             MyCartao
           </Link>
           <Link
@@ -74,7 +81,7 @@ export default function PublicCardPage() {
           </Link>
         </header>
 
-        <main className="mx-auto max-w-lg px-6 pb-16">
+        <main className="mx-auto max-w-lg px-6 pb-20">
           {error ? (
             <p role="alert" className="text-sm text-red-800">
               {error}
@@ -82,7 +89,7 @@ export default function PublicCardPage() {
           ) : null}
 
           {!card && !error ? (
-            <p className="text-sm text-ink-soft">Carregando…</p>
+            <p className="animate-fade text-sm text-ink-soft">Carregando…</p>
           ) : null}
 
           {card ? (
@@ -92,38 +99,49 @@ export default function PublicCardPage() {
                 <img
                   src={avatar}
                   alt=""
-                  className="mb-6 h-28 w-28 rounded-full object-cover ring-2 ring-sand"
+                  className="mb-7 h-36 w-36 rounded-full object-cover ring-2 ring-sand sm:h-40 sm:w-40"
                 />
               ) : (
-                <div className="mb-6 flex h-28 w-28 items-center justify-center rounded-full bg-teal/15 font-display text-3xl text-teal">
-                  {(card.title || "?").slice(0, 1).toUpperCase()}
+                <div className="mb-7 flex h-36 w-36 items-center justify-center rounded-full bg-teal/15 font-display text-4xl text-teal sm:h-40 sm:w-40">
+                  {displayName.slice(0, 1).toUpperCase()}
                 </div>
               )}
-              <h1 className="font-display text-3xl font-semibold sm:text-4xl">
-                {card.title}
+              <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+                {displayName}
               </h1>
+              {company ? (
+                <p className="animate-rise-delay mt-3 text-lg text-ink-soft">
+                  {company}
+                </p>
+              ) : null}
+
               {visibleFields.length > 0 ? (
-                <ul className="mt-8 space-y-3">
+                <ul className="animate-rise-delay mt-10 space-y-1">
                   {visibleFields.map((key) => (
-                    <li key={key} className="border-b border-line py-2">
+                    <li key={key} className="border-b border-line py-3">
                       <p className="text-xs font-medium uppercase tracking-wide text-ink-soft/70">
                         {FIELD_LABELS[key]}
                       </p>
-                      <p className="mt-0.5 text-ink">{fieldStr(card.fields, key)}</p>
+                      <p className="mt-0.5 text-ink">
+                        {fieldStr(card.fields, key)}
+                      </p>
                     </li>
                   ))}
                 </ul>
               ) : null}
 
               {customLinks.length > 0 ? (
-                <nav aria-label="Links" className="mt-8 flex flex-col gap-3">
+                <nav
+                  aria-label="Links"
+                  className="animate-rise-delay-2 mt-10 flex flex-col gap-2.5"
+                >
                   {customLinks.map((link) => (
                     <a
                       key={link.id}
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex w-full items-center justify-center rounded-md border border-line bg-paper/80 px-5 py-3 text-sm font-semibold text-ink transition hover:border-teal/50 hover:text-teal"
+                      className="block w-full border-b border-line py-3.5 text-base font-semibold text-ink transition hover:border-teal hover:text-teal"
                     >
                       {link.title}
                     </a>
@@ -131,7 +149,7 @@ export default function PublicCardPage() {
                 </nav>
               ) : null}
 
-              <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+              <div className="animate-rise-delay-2 mt-12 flex flex-col gap-3 sm:flex-row">
                 <a
                   href={`/api/v1/public/cards/${slugOrId}/vcard.vcf`}
                   className="inline-flex items-center justify-center rounded-md bg-teal px-5 py-2.5 text-sm font-semibold text-paper transition hover:bg-teal-deep"
