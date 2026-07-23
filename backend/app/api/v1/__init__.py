@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, cards, exports, me, media, portfolio
+from app.api.v1 import analytics, auth, cards, exports, me, media, portfolio
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -16,3 +16,4 @@ api_router.include_router(portfolio.router, prefix="/portfolio", tags=["portfoli
 api_router.include_router(
     portfolio.public_router, prefix="/public/portfolio", tags=["public"]
 )
+api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])

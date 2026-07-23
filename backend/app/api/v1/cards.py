@@ -3,13 +3,14 @@ from __future__ import annotations
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_current_user
 from app.models.user import User
 from app.schemas.card import CardCreate, CardResponse, CardUpdate
+from app.services import analytics as analytics_service
 from app.services import cards as cards_service
 
 router = APIRouter()
@@ -60,5 +61,11 @@ def delete_card(
 
 
 @public_router.get("/{slug_or_id}", response_model=CardResponse)
-def get_public_card(slug_or_id: str, db: Session = Depends(get_db)):
-    return cards_service.get_public_card(db, slug_or_id)
+def get_public_card(
+    slug_or_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    card = cards_service.get_public_card(db, slug_or_id)
+    analytics_service.record_view(db, card, request)
+    return card
