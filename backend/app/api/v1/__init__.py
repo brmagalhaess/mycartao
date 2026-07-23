@@ -2,7 +2,18 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import analytics, auth, billing, cards, exports, me, media, portfolio
+from app.api.v1 import (
+    admin,
+    analytics,
+    auth,
+    billing,
+    cards,
+    exports,
+    me,
+    media,
+    portfolio,
+    smart_rules,
+)
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -18,3 +29,8 @@ api_router.include_router(
 )
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(billing.router, prefix="/billing", tags=["billing"])
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(smart_rules.router, prefix="/smart-rules", tags=["smart-rules"])
+api_router.include_router(
+    smart_rules.public_router, prefix="/public/go", tags=["public"]
+)
