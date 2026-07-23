@@ -1,10 +1,14 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import IntegrityError
 
+from app.core.errors import AppError
 from app.db import SessionLocal
 from app.main import app
 from app.models.user import User
+from app.services.profile import set_slug
 
 
 def _login(client: TestClient, email: str, token: str) -> None:
@@ -31,6 +35,29 @@ def test_invalid_slug_rejected(auth_client_pro):
     r = auth_client_pro.patch("/api/v1/me/slug", json={"slug": "AB"})
     assert r.status_code == 400
     assert r.json()["code"] == "invalid_slug"
+
+
+def test_set_slug_integrity_error_maps_to_invalid_slug():
+    db = MagicMock()
+    user = MagicMock()
+    user.plan = "pro"
+    user.id = 99
+
+    profile = MagicMock()
+    profile.user_id = 99
+    db.query.return_value.filter.return_value.one_or_none.side_effect = [None, profile]
+    db.commit.side_effect = IntegrityError(
+        "INSERT",
+        {},
+        Exception("UNIQUE constraint failed: profiles.slug"),
+    )
+
+    with pytest.raises(AppError) as exc_info:
+        set_slug(db, user, "race-slug")
+
+    assert exc_info.value.code == "invalid_slug"
+    assert exc_info.value.status_code == 400
+    db.rollback.assert_called_once()
 
 
 def test_slug_must_be_unique(auth_client_pro):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
@@ -56,6 +57,17 @@ def set_slug(db: Session, user: User, slug: str) -> Profile:
 
     profile = get_profile_for_user(db, user)
     profile.slug = normalized
-    db.commit()
-    db.refresh(profile)
+    try:
+        db.commit()
+        db.refresh(profile)
+    except IntegrityError as exc:
+        db.rollback()
+        if _is_slug_unique_violation(exc):
+            raise AppError("Slug já está em uso", "invalid_slug", status_code=400) from None
+        raise
     return profile
+
+
+def _is_slug_unique_violation(exc: IntegrityError) -> bool:
+    message = str(getattr(exc, "orig", exc)).lower()
+    return "slug" in message or "ix_profiles_slug" in message
