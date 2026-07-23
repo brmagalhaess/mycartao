@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch, toMediaSrc } from "@/lib/api";
+import { parseCustomLinks } from "@/lib/custom-links";
 
 const FIELD_LABELS: Record<string, string> = {
   phone: "Telefone",
@@ -56,6 +57,7 @@ export default function PublicCardPage() {
   const visibleFields = card
     ? Object.keys(FIELD_LABELS).filter((k) => fieldStr(card.fields, k))
     : [];
+  const customLinks = card ? parseCustomLinks(card.fields) : [];
 
   return (
     <div className="atmosphere min-h-screen text-ink">
@@ -112,6 +114,23 @@ export default function PublicCardPage() {
                   ))}
                 </ul>
               ) : null}
+
+              {customLinks.length > 0 ? (
+                <nav aria-label="Links" className="mt-8 flex flex-col gap-3">
+                  {customLinks.map((link) => (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-full items-center justify-center rounded-md border border-line bg-paper/80 px-5 py-3 text-sm font-semibold text-ink transition hover:border-teal/50 hover:text-teal"
+                    >
+                      {link.title}
+                    </a>
+                  ))}
+                </nav>
+              ) : null}
+
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                 <a
                   href={`/api/v1/public/cards/${slugOrId}/vcard.vcf`}

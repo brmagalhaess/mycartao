@@ -4,6 +4,11 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, toMediaSrc } from "@/lib/api";
+import {
+  type CustomLink,
+  parseCustomLinks,
+} from "@/lib/custom-links";
+import CustomLinksEditor from "@/components/CustomLinksEditor";
 
 const FIELD_KEYS = [
   { key: "phone", label: "Telefone" },
@@ -45,6 +50,30 @@ function strField(fields: Record<string, unknown>, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
+function buildSaveFields(
+  fields: Record<string, string>,
+  avatarPreview: string | null,
+  customLinks: CustomLink[],
+  isPro: boolean,
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    ...fields,
+    ...(avatarPreview ? { avatar: avatarPreview } : {}),
+  };
+  if (isPro) {
+    payload.custom_links = customLinks
+      .filter((link) => link.title.trim() && link.url.trim())
+      .map((link, index) => ({
+        id: link.id,
+        title: link.title.trim(),
+        url: link.url.trim(),
+        ...(link.icon ? { icon: link.icon } : {}),
+        sort: index,
+      }));
+  }
+  return payload;
+}
+
 export default function CardEditor({ cardId }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -59,11 +88,25 @@ export default function CardEditor({ cardId }: Props) {
   const [theme, setTheme] = useState("minimal");
   const [fields, setFields] = useState<Record<string, string>>({});
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [plan, setPlan] = useState("free");
+  const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
+
+  const isPro = plan === "pro" || plan === "admin";
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
+      const whoRes = await apiFetch("/api/v1/auth/whoami");
+      if (whoRes.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      if (whoRes.ok) {
+        const user = (await whoRes.json()) as { plan: string };
+        if (!cancelled) setPlan(user.plan ?? "free");
+      }
+
       const meRes = await apiFetch("/api/v1/me");
       if (meRes.status === 401) {
         router.replace("/login");
@@ -99,6 +142,7 @@ export default function CardEditor({ cardId }: Props) {
           FIELD_KEYS.map(({ key }) => [key, strField(card.fields, key)]),
         ),
       );
+      setCustomLinks(parseCustomLinks(card.fields));
       const avatar =
         typeof card.fields.avatar === "string"
           ? toMediaSrc(card.fields.avatar)
@@ -156,13 +200,18 @@ export default function CardEditor({ cardId }: Props) {
 
       const data = (await res.json()) as { url: string; id: string };
       const mediaUrl = toMediaSrc(data.url);
-      const updatedFields = { ...fields, avatar: mediaUrl };
+      const saveFields = buildSaveFields(
+        fields,
+        mediaUrl,
+        customLinks,
+        isPro,
+      );
 
       const cardRes = await apiFetch(`/api/v1/cards/${cardId}`, {
         method: "PATCH",
         body: JSON.stringify({
           title: title.trim() || "Meu cartão",
-          fields: updatedFields,
+          fields: saveFields,
         }),
       });
 
@@ -173,16 +222,19 @@ export default function CardEditor({ cardId }: Props) {
       if (!cardRes.ok) {
         const errData = (await cardRes.json().catch(() => null)) as {
           detail?: string;
+          code?: string;
         } | null;
         setError(
-          errData?.detail ??
-            "Avatar enviado, mas não foi possível salvar no cartão.",
+          errData?.code === "custom_links_pro_only"
+            ? "Links personalizados exigem plano Pro."
+            : (errData?.detail ??
+              "Avatar enviado, mas não foi possível salvar no cartão."),
         );
         return;
       }
 
       setAvatarPreview(mediaUrl);
-      setFields(updatedFields);
+      setFields({ ...fields, avatar: mediaUrl });
       setMessage("Avatar enviado e salvo.");
     } catch {
       setError("Falha de rede no upload.");
@@ -202,10 +254,7 @@ export default function CardEditor({ cardId }: Props) {
         method: "PATCH",
         body: JSON.stringify({
           title: title.trim() || "Meu cartão",
-          fields: {
-            ...fields,
-            ...(avatarPreview ? { avatar: avatarPreview } : {}),
-          },
+          fields: buildSaveFields(fields, avatarPreview, customLinks, isPro),
         }),
       });
 
@@ -216,8 +265,13 @@ export default function CardEditor({ cardId }: Props) {
       if (!cardRes.ok) {
         const data = (await cardRes.json().catch(() => null)) as {
           detail?: string;
+          code?: string;
         } | null;
-        setError(data?.detail ?? "Não foi possível salvar o cartão.");
+        setError(
+          data?.code === "custom_links_pro_only"
+            ? "Links personalizados exigem plano Pro. Remova os links ou assine o Pro."
+            : (data?.detail ?? "Não foi possível salvar o cartão."),
+        );
         return;
       }
 
@@ -365,6 +419,13 @@ export default function CardEditor({ cardId }: Props) {
             </label>
           ))}
         </fieldset>
+
+        <CustomLinksEditor
+          links={customLinks}
+          onChange={setCustomLinks}
+          disabled={!isPro}
+          isPro={isPro}
+        />
 
         <button
           type="submit"

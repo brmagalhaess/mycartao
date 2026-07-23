@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { apiFetch, toMediaSrc } from "@/lib/api";
+import { parseCustomLinks } from "@/lib/custom-links";
 
 type PublicCard = {
   id: string;
@@ -57,6 +58,9 @@ export default function PresenceModePage() {
     card && typeof card.fields.avatar === "string"
       ? toMediaSrc(card.fields.avatar)
       : null;
+  const presenceLinks = card
+    ? parseCustomLinks(card.fields).slice(0, 3)
+    : [];
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0c2a2e] text-paper">
@@ -126,6 +130,25 @@ export default function PresenceModePage() {
             >
               Salvar contato
             </a>
+
+            {presenceLinks.length > 0 ? (
+              <nav
+                aria-label="Links rápidos"
+                className="animate-rise-delay-2 flex flex-col items-center gap-2"
+              >
+                {presenceLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-paper/80 underline-offset-4 transition hover:text-sand hover:underline"
+                  >
+                    {link.title}
+                  </a>
+                ))}
+              </nav>
+            ) : null}
           </>
         ) : null}
       </main>
