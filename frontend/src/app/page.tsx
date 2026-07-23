@@ -1,103 +1,65 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="atmosphere min-h-screen text-ink">
+      <div className="atmosphere-pattern min-h-screen">
+        <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5 sm:px-8">
+          <span className="text-sm font-medium tracking-wide text-ink-soft/80">
+            mycartao.com
+          </span>
+          <nav className="flex items-center gap-5 text-sm font-medium">
+            <Link
+              href="/pricing"
+              className="text-ink-soft transition hover:text-teal"
+            >
+              Preços
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-md bg-ink px-4 py-2 text-paper transition hover:bg-ink-soft"
+            >
+              Entrar
+            </Link>
+          </nav>
+        </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
+        <main className="relative mx-auto flex min-h-[calc(100vh-4.5rem)] w-full max-w-6xl flex-col justify-center px-6 pb-16 pt-8 sm:px-8 lg:pb-24">
+          <div
             aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+            className="animate-float pointer-events-none absolute -right-8 top-16 h-64 w-64 rounded-full bg-teal/10 blur-3xl sm:right-8 sm:h-80 sm:w-80"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
+          <div
             aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+            className="pointer-events-none absolute bottom-24 left-0 h-48 w-48 rounded-full bg-sand/40 blur-3xl sm:left-12"
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+          <p className="animate-rise font-display text-5xl font-semibold tracking-tight text-ink sm:text-7xl lg:text-8xl">
+            MyCartao
+          </p>
+          <h1 className="animate-rise-delay mt-6 max-w-2xl font-display text-2xl font-medium leading-snug text-ink-soft sm:text-4xl sm:leading-tight">
+            Seu cartão de presença, sempre à mão.
+          </h1>
+          <p className="animate-rise-delay-2 mt-5 max-w-xl text-base leading-relaxed text-ink-soft/85 sm:text-lg">
+            Crie um link com QR, Presence Mode e portfólio — compartilhe em
+            segundos, sem cartão de papel.
+          </p>
+          <div className="animate-rise-delay-2 mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center rounded-md bg-teal px-6 py-3 text-base font-semibold text-paper transition hover:bg-teal-deep"
+            >
+              Começar grátis
+            </Link>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center rounded-md border border-line bg-paper/60 px-6 py-3 text-base font-medium text-ink transition hover:border-teal/40 hover:bg-paper"
+            >
+              Ver planos
+            </Link>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
