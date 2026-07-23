@@ -1,0 +1,125 @@
+from __future__ import annotations
+
+import uuid
+from typing import List, Optional
+from uuid import UUID
+
+from sqlalchemy.orm import Session
+
+from app.core.errors import AppError
+from app.models.card import Card
+from app.models.profile import Profile
+from app.models.user import User
+from app.schemas.card import CardCreate, CardUpdate
+from app.services.profile import get_profile_for_user
+
+FREE_CARD_LIMIT = 1
+PRO_PLANS = frozenset({"pro", "admin"})
+
+# fields JSON keys: phone, email, company, whatsapp, website, linkedin, instagram
+
+
+def list_cards(db: Session, user: User) -> List[Card]:
+    profile = get_profile_for_user(db, user)
+    return (
+        db.query(Card)
+        .filter(Card.profile_id == profile.id)
+        .order_by(Card.created_at.asc())
+        .all()
+    )
+
+
+def create_card(db: Session, user: User, data: CardCreate) -> Card:
+    profile = get_profile_for_user(db, user)
+    if user.plan not in PRO_PLANS:
+        count = db.query(Card).filter(Card.profile_id == profile.id).count()
+        if count >= FREE_CARD_LIMIT:
+            raise AppError(
+                "Limite de cartões do plano Free atingido",
+                "card_limit_reached",
+                status_code=403,
+            )
+
+    card = Card(
+        profile_id=profile.id,
+        title=data.title,
+        layout=data.layout,
+        fields=data.fields or {},
+        is_primary=data.is_primary,
+    )
+    if data.is_primary:
+        _clear_primary(db, profile.id)
+    db.add(card)
+    db.commit()
+    db.refresh(card)
+    return card
+
+
+def get_card_for_user(db: Session, user: User, card_id: UUID) -> Card:
+    profile = get_profile_for_user(db, user)
+    card = (
+        db.query(Card)
+        .filter(Card.id == card_id, Card.profile_id == profile.id)
+        .one_or_none()
+    )
+    if card is None:
+        raise AppError("Cartão não encontrado", "not_found", status_code=404)
+    return card
+
+
+def update_card(db: Session, user: User, card_id: UUID, data: CardUpdate) -> Card:
+    card = get_card_for_user(db, user, card_id)
+    payload = data.model_dump(exclude_unset=True)
+    if payload.get("is_primary") is True:
+        _clear_primary(db, card.profile_id)
+    for key, value in payload.items():
+        setattr(card, key, value)
+    db.commit()
+    db.refresh(card)
+    return card
+
+
+def delete_card(db: Session, user: User, card_id: UUID) -> None:
+    card = get_card_for_user(db, user, card_id)
+    db.delete(card)
+    db.commit()
+
+
+def get_public_card(db: Session, slug_or_id: str) -> Card:
+    card = _by_uuid(db, slug_or_id)
+    if card is not None:
+        return card
+
+    profile = db.query(Profile).filter(Profile.slug == slug_or_id).one_or_none()
+    if profile is None:
+        raise AppError("Cartão não encontrado", "not_found", status_code=404)
+
+    card = (
+        db.query(Card)
+        .filter(Card.profile_id == profile.id, Card.is_primary.is_(True))
+        .one_or_none()
+    )
+    if card is None:
+        card = (
+            db.query(Card)
+            .filter(Card.profile_id == profile.id)
+            .order_by(Card.created_at.asc())
+            .first()
+        )
+    if card is None:
+        raise AppError("Cartão não encontrado", "not_found", status_code=404)
+    return card
+
+
+def _by_uuid(db: Session, slug_or_id: str) -> Optional[Card]:
+    try:
+        card_id = UUID(slug_or_id)
+    except ValueError:
+        return None
+    return db.query(Card).filter(Card.id == card_id).one_or_none()
+
+
+def _clear_primary(db: Session, profile_id: uuid.UUID) -> None:
+    db.query(Card).filter(Card.profile_id == profile_id, Card.is_primary.is_(True)).update(
+        {"is_primary": False}
+    )
