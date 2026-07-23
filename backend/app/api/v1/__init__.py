@@ -6,6 +6,7 @@ from app.api.v1 import (
     admin,
     analytics,
     auth,
+    avatar,
     billing,
     cards,
     exports,
@@ -23,6 +24,9 @@ api_router.include_router(exports.router, prefix="/cards", tags=["exports"])
 api_router.include_router(cards.public_router, prefix="/public/cards", tags=["public"])
 api_router.include_router(exports.public_router, prefix="/public/cards", tags=["public"])
 api_router.include_router(media.router, prefix="/media", tags=["media"])
+api_router.include_router(
+    avatar.public_router, prefix="/public/avatar", tags=["public"]
+)
 api_router.include_router(portfolio.router, prefix="/portfolio", tags=["portfolio"])
 api_router.include_router(
     portfolio.public_router, prefix="/public/portfolio", tags=["public"]

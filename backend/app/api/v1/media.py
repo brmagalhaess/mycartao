@@ -11,6 +11,7 @@ from app.core.errors import AppError
 from app.db import get_db
 from app.deps import get_current_user
 from app.models.media import MediaAsset
+from app.models.profile import Profile
 from app.models.user import User
 from app.schemas.media import MediaUploadResponse
 from app.services import minio_client
@@ -106,6 +107,12 @@ async def upload_media(
         purpose=purpose,
     )
     db.add(asset)
+
+    if purpose == "avatar":
+        profile = db.query(Profile).filter(Profile.user_id == user.id).one_or_none()
+        if profile is not None:
+            profile.avatar_key = bucket_key
+
     db.commit()
     db.refresh(asset)
 
