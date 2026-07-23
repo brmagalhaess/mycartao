@@ -11,12 +11,13 @@ from app.models.card import Card
 from app.models.profile import Profile
 from app.models.user import User
 from app.schemas.card import CardCreate, CardUpdate
+from app.services.custom_links import gate_custom_links
 from app.services.profile import get_profile_for_user
 
 FREE_CARD_LIMIT = 1
 PRO_PLANS = frozenset({"pro", "admin"})
 
-# fields JSON keys: phone, email, company, whatsapp, website, linkedin, instagram
+# fields JSON keys: phone, email, company, whatsapp, website, linkedin, instagram, custom_links
 
 
 def list_cards(db: Session, user: User) -> List[Card]:
@@ -40,11 +41,12 @@ def create_card(db: Session, user: User, data: CardCreate) -> Card:
                 status_code=403,
             )
 
+    fields = gate_custom_links(user, data.fields or {}) or {}
     card = Card(
         profile_id=profile.id,
         title=data.title,
         layout=data.layout,
-        fields=data.fields or {},
+        fields=fields,
         is_primary=data.is_primary,
     )
     if data.is_primary:
@@ -70,6 +72,14 @@ def get_card_for_user(db: Session, user: User, card_id: UUID) -> Card:
 def update_card(db: Session, user: User, card_id: UUID, data: CardUpdate) -> Card:
     card = get_card_for_user(db, user, card_id)
     payload = data.model_dump(exclude_unset=True)
+    if "fields" in payload:
+        fields = gate_custom_links(user, payload["fields"]) or {}
+        # Free replace-all must not wipe Pro-era custom_links (cannot clear/modify here).
+        if user.plan not in PRO_PLANS:
+            existing_links = (card.fields or {}).get("custom_links")
+            if existing_links:
+                fields = {**fields, "custom_links": existing_links}
+        payload["fields"] = fields
     if payload.get("is_primary") is True:
         _clear_primary(db, card.profile_id)
     for key, value in payload.items():

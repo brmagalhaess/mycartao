@@ -4,22 +4,17 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, toMediaSrc } from "@/lib/api";
-
-const FIELD_KEYS = [
-  { key: "phone", label: "Telefone" },
-  { key: "whatsapp", label: "WhatsApp" },
-  { key: "email", label: "E-mail" },
-  { key: "company", label: "Empresa" },
-  { key: "website", label: "Site" },
-  { key: "linkedin", label: "LinkedIn" },
-  { key: "instagram", label: "Instagram" },
-] as const;
-
-const THEMES = [
-  { value: "minimal", label: "Minimal" },
-  { value: "classic", label: "Clássico" },
-  { value: "bold", label: "Bold" },
-] as const;
+import {
+  type CustomLink,
+  parseCustomLinks,
+} from "@/lib/custom-links";
+import CustomLinksEditor from "@/components/CustomLinksEditor";
+import {
+  ContactsSection,
+  FIELD_KEYS,
+  ProfileSection,
+  ThemeSection,
+} from "@/components/CardEditorSections";
 
 type Card = {
   id: string;
@@ -45,6 +40,30 @@ function strField(fields: Record<string, unknown>, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
+function buildSaveFields(
+  fields: Record<string, string>,
+  avatarPreview: string | null,
+  customLinks: CustomLink[],
+  isPro: boolean,
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    ...fields,
+    ...(avatarPreview ? { avatar: avatarPreview } : {}),
+  };
+  if (isPro) {
+    payload.custom_links = customLinks
+      .filter((link) => link.title.trim() && link.url.trim())
+      .map((link, index) => ({
+        id: link.id,
+        title: link.title.trim(),
+        url: link.url.trim(),
+        ...(link.icon ? { icon: link.icon } : {}),
+        sort: index,
+      }));
+  }
+  return payload;
+}
+
 export default function CardEditor({ cardId }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -59,11 +78,25 @@ export default function CardEditor({ cardId }: Props) {
   const [theme, setTheme] = useState("minimal");
   const [fields, setFields] = useState<Record<string, string>>({});
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [plan, setPlan] = useState("free");
+  const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
+
+  const isPro = plan === "pro" || plan === "admin";
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
+      const whoRes = await apiFetch("/api/v1/auth/whoami");
+      if (whoRes.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      if (whoRes.ok) {
+        const user = (await whoRes.json()) as { plan: string };
+        if (!cancelled) setPlan(user.plan ?? "free");
+      }
+
       const meRes = await apiFetch("/api/v1/me");
       if (meRes.status === 401) {
         router.replace("/login");
@@ -99,6 +132,7 @@ export default function CardEditor({ cardId }: Props) {
           FIELD_KEYS.map(({ key }) => [key, strField(card.fields, key)]),
         ),
       );
+      setCustomLinks(parseCustomLinks(card.fields));
       const avatar =
         typeof card.fields.avatar === "string"
           ? toMediaSrc(card.fields.avatar)
@@ -156,13 +190,18 @@ export default function CardEditor({ cardId }: Props) {
 
       const data = (await res.json()) as { url: string; id: string };
       const mediaUrl = toMediaSrc(data.url);
-      const updatedFields = { ...fields, avatar: mediaUrl };
+      const saveFields = buildSaveFields(
+        fields,
+        mediaUrl,
+        customLinks,
+        isPro,
+      );
 
       const cardRes = await apiFetch(`/api/v1/cards/${cardId}`, {
         method: "PATCH",
         body: JSON.stringify({
           title: title.trim() || "Meu cartão",
-          fields: updatedFields,
+          fields: saveFields,
         }),
       });
 
@@ -173,16 +212,19 @@ export default function CardEditor({ cardId }: Props) {
       if (!cardRes.ok) {
         const errData = (await cardRes.json().catch(() => null)) as {
           detail?: string;
+          code?: string;
         } | null;
         setError(
-          errData?.detail ??
-            "Avatar enviado, mas não foi possível salvar no cartão.",
+          errData?.code === "custom_links_pro_only"
+            ? "Links personalizados exigem plano Pro."
+            : (errData?.detail ??
+              "Avatar enviado, mas não foi possível salvar no cartão."),
         );
         return;
       }
 
       setAvatarPreview(mediaUrl);
-      setFields(updatedFields);
+      setFields({ ...fields, avatar: mediaUrl });
       setMessage("Avatar enviado e salvo.");
     } catch {
       setError("Falha de rede no upload.");
@@ -202,10 +244,7 @@ export default function CardEditor({ cardId }: Props) {
         method: "PATCH",
         body: JSON.stringify({
           title: title.trim() || "Meu cartão",
-          fields: {
-            ...fields,
-            ...(avatarPreview ? { avatar: avatarPreview } : {}),
-          },
+          fields: buildSaveFields(fields, avatarPreview, customLinks, isPro),
         }),
       });
 
@@ -216,8 +255,13 @@ export default function CardEditor({ cardId }: Props) {
       if (!cardRes.ok) {
         const data = (await cardRes.json().catch(() => null)) as {
           detail?: string;
+          code?: string;
         } | null;
-        setError(data?.detail ?? "Não foi possível salvar o cartão.");
+        setError(
+          data?.code === "custom_links_pro_only"
+            ? "Links personalizados exigem plano Pro. Remova os links ou assine o Pro."
+            : (data?.detail ?? "Não foi possível salvar o cartão."),
+        );
         return;
       }
 
@@ -271,9 +315,13 @@ export default function CardEditor({ cardId }: Props) {
               ← Cartões
             </Link>
           </p>
-          <h1 className="mt-2 font-display text-3xl font-semibold">
+          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
             Editar cartão
           </h1>
+          <p className="mt-2 max-w-md text-ink-soft">
+            Perfil, contatos, links Pro e tema — salve para atualizar o cartão
+            público.
+          </p>
         </div>
         <Link
           href={`/app/cards/${cardId}/qr`}
@@ -283,107 +331,52 @@ export default function CardEditor({ cardId }: Props) {
         </Link>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-8 max-w-xl space-y-5">
-        <label className="block text-sm font-medium text-ink-soft">
-          Título do cartão
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-          />
-        </label>
+      <form onSubmit={onSubmit} className="mt-10 max-w-xl space-y-0">
+        <ProfileSection
+          title={title}
+          displayName={displayName}
+          headline={headline}
+          avatarPreview={avatarPreview}
+          uploading={uploading}
+          onTitle={setTitle}
+          onDisplayName={setDisplayName}
+          onHeadline={setHeadline}
+          onUpload={onUpload}
+        />
 
-        <label className="block text-sm font-medium text-ink-soft">
-          Nome de exibição
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-          />
-        </label>
+        <ContactsSection fields={fields} onUpdateField={updateField} />
 
-        <label className="block text-sm font-medium text-ink-soft">
-          Headline
-          <input
-            value={headline}
-            onChange={(e) => setHeadline(e.target.value)}
-            className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-            placeholder="Ex.: Designer · São Paulo"
+        <div className="border-t border-line pt-8">
+          <CustomLinksEditor
+            links={customLinks}
+            onChange={setCustomLinks}
+            disabled={!isPro}
+            isPro={isPro}
           />
-        </label>
-
-        <label className="block text-sm font-medium text-ink-soft">
-          Tema
-          <select
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-            className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-          >
-            {THEMES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div>
-          <p className="text-sm font-medium text-ink-soft">Avatar</p>
-          {avatarPreview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarPreview}
-              alt="Avatar"
-              className="mt-3 h-20 w-20 object-cover"
-            />
-          ) : (
-            <p className="mt-2 text-sm text-ink-soft/80">Nenhuma foto ainda.</p>
-          )}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            disabled={uploading}
-            onChange={(e) => onUpload(e.target.files?.[0] ?? null)}
-            className="mt-3 block w-full text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-teal file:px-3 file:py-2 file:text-sm file:font-semibold file:text-paper"
-          />
-          {uploading ? (
-            <p className="mt-2 text-sm text-ink-soft">Enviando…</p>
-          ) : null}
         </div>
 
-        <fieldset className="space-y-4 border-t border-line pt-5">
-          <legend className="text-sm font-semibold text-ink">Contatos</legend>
-          {FIELD_KEYS.map(({ key, label }) => (
-            <label key={key} className="block text-sm font-medium text-ink-soft">
-              {label}
-              <input
-                value={fields[key] ?? ""}
-                onChange={(e) => updateField(key, e.target.value)}
-                className="mt-2 w-full rounded-md border border-line bg-paper px-4 py-3 text-base text-ink outline-none transition focus:border-teal"
-              />
-            </label>
-          ))}
-        </fieldset>
+        <ThemeSection theme={theme} onTheme={setTheme} />
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-md bg-teal px-5 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
-        >
-          {saving ? "Salvando…" : "Salvar alterações"}
-        </button>
+        <div className="border-t border-line pt-8">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-md bg-teal px-5 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
+          >
+            {saving ? "Salvando…" : "Salvar alterações"}
+          </button>
 
-        {message ? (
-          <p role="status" className="text-sm text-teal-deep">
-            {message}
-          </p>
-        ) : null}
-        {error ? (
-          <p role="alert" className="text-sm text-red-800">
-            {error}
-          </p>
-        ) : null}
+          {message ? (
+            <p role="status" className="mt-4 text-sm text-teal-deep">
+              {message}
+            </p>
+          ) : null}
+          {error ? (
+            <p role="alert" className="mt-4 text-sm text-red-800">
+              {error}
+            </p>
+          ) : null}
+        </div>
       </form>
     </div>
   );

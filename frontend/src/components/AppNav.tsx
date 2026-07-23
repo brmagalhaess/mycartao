@@ -1,19 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
 const NAV = [
   { href: "/app", label: "Cartões" },
   { href: "/app/portfolio", label: "Portfólio" },
+  { href: "/app/smart", label: "Smart" },
   { href: "/app/analytics", label: "Analytics" },
   { href: "/app/billing", label: "Cobrança" },
   { href: "/app/settings", label: "Configurações" },
 ] as const;
 
+function isActivePath(pathname: string, href: string): boolean {
+  if (href === "/app") {
+    return pathname === "/app" || pathname.startsWith("/app/cards");
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export default function AppNav() {
+  const pathname = usePathname();
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -43,19 +52,32 @@ export default function AppNav() {
 
   return (
     <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium">
-      {NAV.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className="text-ink-soft transition hover:text-teal"
-        >
-          {item.label}
-        </Link>
-      ))}
+      {NAV.map((item) => {
+        const active = isActivePath(pathname, item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={active ? "page" : undefined}
+            className={
+              active
+                ? "text-teal transition"
+                : "text-ink-soft transition hover:text-teal"
+            }
+          >
+            {item.label}
+          </Link>
+        );
+      })}
       {isAdmin ? (
         <Link
           href="/admin"
-          className="text-ink-soft transition hover:text-teal"
+          aria-current={pathname.startsWith("/admin") ? "page" : undefined}
+          className={
+            pathname.startsWith("/admin")
+              ? "text-teal transition"
+              : "text-ink-soft transition hover:text-teal"
+          }
         >
           Admin
         </Link>
