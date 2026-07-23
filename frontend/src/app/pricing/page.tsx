@@ -4,6 +4,7 @@ const FREE_FEATURES = [
   "1 cartão digital",
   "Link por ID + QR",
   "Presence Mode",
+  "API de avatar (estilo Gravatar) — grátis",
   "Portfólio com até 3 itens",
   "Analytics 7 dias",
   "Print PDF com watermark",

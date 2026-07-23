@@ -74,26 +74,50 @@ export default function HomePage() {
           </section>
 
           <section className="mx-auto w-full max-w-6xl border-t border-line px-6 py-16 sm:px-8 sm:py-20">
-            <h2 className="animate-rise font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-              Pro: links e Smart Card
+            <p className="text-xs font-semibold uppercase tracking-wide text-teal">
+              Grátis
+            </p>
+            <h2 className="animate-rise mt-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+              API de avatar, estilo Gravatar
+            </h2>
+            <p className="animate-rise-delay mt-4 max-w-xl text-base leading-relaxed text-ink-soft sm:text-lg">
+              Embuta a foto da sua conta MyCartao em qualquer site ou sistema
+              com uma URL pública por e-mail — disponível no plano Free.
+            </p>
+            <div className="animate-rise-delay-2 mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/developers"
+                className="inline-flex items-center justify-center rounded-md bg-teal px-5 py-2.5 text-sm font-semibold text-paper transition hover:bg-teal-deep"
+              >
+                Ver documentação
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center text-sm font-medium text-ink-soft transition hover:text-teal"
+              >
+                Entrar e copiar minha URL →
+              </Link>
+            </div>
+          </section>
+
+          <section className="mx-auto w-full max-w-6xl border-t border-line px-6 py-16 sm:px-8 sm:py-20">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft/70">
+              Pro
+            </p>
+            <h2 className="animate-rise mt-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+              Links personalizados e Smart Card
             </h2>
             <p className="animate-rise-delay mt-4 max-w-xl text-base leading-relaxed text-ink-soft sm:text-lg">
               No Pro, adicione botões personalizados ao cartão e um único link
               inteligente que redireciona conforme regras — horário, WhatsApp ou
               portfólio.
             </p>
-            <div className="animate-rise-delay-2 mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="animate-rise-delay-2 mt-8">
               <Link
                 href="/pricing"
-                className="inline-flex items-center justify-center rounded-md bg-teal px-5 py-2.5 text-sm font-semibold text-paper transition hover:bg-teal-deep"
+                className="inline-flex items-center justify-center rounded-md border border-line bg-paper/70 px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-teal/40"
               >
                 Ver plano Pro
-              </Link>
-              <Link
-                href="/developers"
-                className="inline-flex items-center justify-center text-sm font-medium text-ink-soft transition hover:text-teal"
-              >
-                API de avatar →
               </Link>
             </div>
           </section>
