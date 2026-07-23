@@ -188,7 +188,12 @@ export default function AppDashboardPage() {
       ) : null}
 
       {origin && shareCard && profile ? (
-        <div className="mt-14 max-w-2xl space-y-12 border-t border-line pt-10">
+        <div className="mt-14 max-w-2xl space-y-4 border-t border-line pt-10">
+          <h2 className="section-title">Seu link</h2>
+          <p className="text-sm text-ink-soft">
+            Link comum grátis; personalização (slug) no Pro — tudo em
+            Configurações.
+          </p>
           <ShareLinksBlock
             kind="card"
             commonPath={`/c/${shareCard.id}`}
@@ -196,13 +201,12 @@ export default function AppDashboardPage() {
             isPro={isPro}
             origin={origin}
           />
-          <ShareLinksBlock
-            kind="portfolio"
-            commonPath={`/p/${profile.id}`}
-            personalizedPath={profile.slug ? `/p/${profile.slug}` : null}
-            isPro={isPro}
-            origin={origin}
-          />
+          <Link
+            href="/app/settings"
+            className="inline-block text-sm font-medium text-teal hover:text-teal-deep"
+          >
+            Gerenciar link e aparência nas Configurações →
+          </Link>
         </div>
       ) : null}
     </main>

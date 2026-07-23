@@ -92,7 +92,6 @@ def test_get_and_patch_me(auth_client_free):
             "display_name": "Bruno",
             "headline": "Dev",
             "theme": "minimal",
-            "brand_color": "#1a1a1a",
         },
     )
     assert r.status_code == 200
@@ -100,4 +99,3 @@ def test_get_and_patch_me(auth_client_free):
     assert body["display_name"] == "Bruno"
     assert body["headline"] == "Dev"
     assert body["theme"] == "minimal"
-    assert body["brand_color"] == "#1a1a1a"

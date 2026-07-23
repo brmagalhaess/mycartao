@@ -28,3 +28,14 @@ class CardResponse(BaseModel):
     is_primary: bool = False
 
     model_config = {"from_attributes": True}
+
+
+class PublicCardResponse(CardResponse):
+    """Public card plus profile presentation (theme, branding, identity)."""
+
+    display_name: Optional[str] = None
+    headline: Optional[str] = None
+    bio: Optional[str] = None
+    theme: Optional[str] = None
+    brand_color: Optional[str] = None
+    show_mycartao_branding: bool = True

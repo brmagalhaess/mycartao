@@ -10,7 +10,7 @@ from app.core.errors import AppError
 from app.models.card import Card
 from app.models.profile import Profile
 from app.models.user import User
-from app.schemas.card import CardCreate, CardUpdate
+from app.schemas.card import CardCreate, CardUpdate, PublicCardResponse
 from app.services.custom_links import gate_custom_links
 from app.services.profile import get_profile_for_user
 
@@ -119,6 +119,26 @@ def get_public_card(db: Session, slug_or_id: str) -> Card:
     if card is None:
         raise AppError("Cartão não encontrado", "not_found", status_code=404)
     return card
+
+
+def to_public_card_response(card: Card) -> PublicCardResponse:
+    profile = card.profile
+    owner = profile.user if profile is not None else None
+    plan = owner.plan if owner is not None else "free"
+    brand = profile.brand_color if profile and plan in PRO_PLANS else None
+    return PublicCardResponse(
+        id=card.id,
+        title=card.title,
+        layout=card.layout,
+        fields=card.fields or {},
+        is_primary=card.is_primary,
+        display_name=profile.display_name if profile else None,
+        headline=profile.headline if profile else None,
+        bio=profile.bio if profile else None,
+        theme=(profile.theme if profile else None) or "minimal",
+        brand_color=brand,
+        show_mycartao_branding=plan not in PRO_PLANS,
+    )
 
 
 def _by_uuid(db: Session, slug_or_id: str) -> Optional[Card]:

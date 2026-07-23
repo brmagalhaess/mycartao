@@ -70,6 +70,19 @@ body {
   background-size: 22px 22px;
 }
 
+.card-theme-surface {
+  background: var(--card-bg, var(--paper));
+  color: var(--card-fg, var(--ink));
+}
+
+.card-theme-ink .card-theme-surface {
+  background-image: radial-gradient(
+    ellipse at 20% 0%,
+    rgba(232, 213, 181, 0.12),
+    transparent 50%
+  );
+}
+
 @keyframes rise-in {
   from {
     opacity: 0;

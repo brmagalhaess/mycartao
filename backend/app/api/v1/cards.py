@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.deps import get_current_user
 from app.models.user import User
-from app.schemas.card import CardCreate, CardResponse, CardUpdate
+from app.schemas.card import CardCreate, CardResponse, CardUpdate, PublicCardResponse
 from app.services import analytics as analytics_service
 from app.services import cards as cards_service
 
@@ -60,7 +60,7 @@ def delete_card(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@public_router.get("/{slug_or_id}", response_model=CardResponse)
+@public_router.get("/{slug_or_id}", response_model=PublicCardResponse)
 def get_public_card(
     slug_or_id: str,
     request: Request,
@@ -68,4 +68,4 @@ def get_public_card(
 ):
     card = cards_service.get_public_card(db, slug_or_id)
     analytics_service.record_view(db, card, request)
-    return card
+    return cards_service.to_public_card_response(card)

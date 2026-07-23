@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 const FIELD_KEYS = [
   { key: "phone", label: "Telefone" },
   { key: "whatsapp", label: "WhatsApp" },
@@ -134,6 +136,10 @@ export function ThemeSection({ theme, onTheme }: ThemeSectionProps) {
   return (
     <section className="space-y-4 border-t border-line pt-8">
       <h2 className="section-title">Tema</h2>
+      <p className="text-sm text-ink-soft">
+        Ajuste rápido. Aparência completa (temas Pro, cor da marca e link) fica
+        em Configurações.
+      </p>
       <label className="block text-sm font-medium text-ink-soft">
         Visual do cartão
         <select
@@ -148,6 +154,12 @@ export function ThemeSection({ theme, onTheme }: ThemeSectionProps) {
           ))}
         </select>
       </label>
+      <Link
+        href="/app/settings"
+        className="inline-block text-sm font-medium text-teal hover:text-teal-deep"
+      >
+        Abrir Configurações →
+      </Link>
     </section>
   );
 }

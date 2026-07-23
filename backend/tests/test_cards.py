@@ -12,10 +12,56 @@ def test_public_by_id(auth_client_free):
     created = auth_client_free.post(
         "/api/v1/cards", json={"title": "A", "fields": {"phone": "11999999999"}}
     ).json()
+    assert (
+        auth_client_free.patch(
+            "/api/v1/me",
+            json={
+                "display_name": "Bruno Free",
+                "headline": "Dev",
+                "theme": "classic",
+            },
+        ).status_code
+        == 200
+    )
     r = auth_client_free.get(f"/api/v1/public/cards/{created['id']}")
     assert r.status_code == 200
-    assert r.json()["title"] == "A"
-    assert r.json()["fields"]["phone"] == "11999999999"
+    body = r.json()
+    assert body["title"] == "A"
+    assert body["fields"]["phone"] == "11999999999"
+    assert body["display_name"] == "Bruno Free"
+    assert body["headline"] == "Dev"
+    assert body["theme"] == "classic"
+    assert body["show_mycartao_branding"] is True
+    assert body["brand_color"] is None
+
+
+def test_free_cannot_set_brand_color(auth_client_free):
+    r = auth_client_free.patch(
+        "/api/v1/me",
+        json={"brand_color": "#ff0000"},
+    )
+    assert r.status_code == 403
+    assert r.json()["code"] == "brand_color_pro_only"
+
+
+def test_pro_public_hides_branding_and_exposes_brand_color(auth_client_pro):
+    created = auth_client_pro.post(
+        "/api/v1/cards", json={"title": "Pro Card", "fields": {}}
+    ).json()
+    assert (
+        auth_client_pro.patch(
+            "/api/v1/me",
+            json={"theme": "ink", "brand_color": "#aabbcc", "display_name": "Pro"},
+        ).status_code
+        == 200
+    )
+    r = auth_client_pro.get(f"/api/v1/public/cards/{created['id']}")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["theme"] == "ink"
+    assert body["brand_color"] == "#aabbcc"
+    assert body["show_mycartao_branding"] is False
+    assert body["display_name"] == "Pro"
 
 
 def test_cards_crud(auth_client_pro):

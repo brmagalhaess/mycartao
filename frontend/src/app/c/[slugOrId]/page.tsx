@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch, toMediaSrc } from "@/lib/api";
 import { parseCustomLinks } from "@/lib/custom-links";
+import { themeStyleVars, type CardTheme } from "@/lib/card-theme";
 
 const FIELD_LABELS: Record<string, string> = {
   phone: "Telefone",
@@ -21,6 +22,12 @@ type PublicCard = {
   title: string;
   fields: Record<string, unknown>;
   is_primary: boolean;
+  display_name?: string | null;
+  headline?: string | null;
+  bio?: string | null;
+  theme?: string | null;
+  brand_color?: string | null;
+  show_mycartao_branding?: boolean;
 };
 
 function fieldStr(fields: Record<string, unknown>, key: string): string {
@@ -53,6 +60,12 @@ export default function PublicCardPage() {
     };
   }, [slugOrId]);
 
+  const theme = (card?.theme || "minimal") as CardTheme;
+  const style = useMemo(
+    () => themeStyleVars(theme, card?.brand_color) as CSSProperties,
+    [theme, card?.brand_color],
+  );
+
   const avatar = card ? toMediaSrc(fieldStr(card.fields, "avatar")) : "";
   const company = card ? fieldStr(card.fields, "company") : "";
   const visibleFields = card
@@ -61,21 +74,35 @@ export default function PublicCardPage() {
       )
     : [];
   const customLinks = card ? parseCustomLinks(card.fields) : [];
-  const displayName = card?.title?.trim() || "MyCartao";
+  const displayName =
+    card?.display_name?.trim() || card?.title?.trim() || "MyCartao";
+  const headline = card?.headline?.trim() || company;
+  const showBrand = card?.show_mycartao_branding !== false;
 
   return (
-    <div className="atmosphere min-h-screen text-ink">
-      <div className="atmosphere-pattern min-h-screen">
+    <div
+      className={`card-theme card-theme-${theme} min-h-screen`}
+      style={style}
+      data-theme={theme}
+    >
+      <div className="card-theme-surface min-h-screen">
         <header className="mx-auto flex w-full max-w-lg items-center justify-between px-6 py-5">
-          <Link
-            href="/"
-            className="font-display text-lg font-semibold tracking-tight"
-          >
-            MyCartao
-          </Link>
+          {showBrand ? (
+            <Link
+              href="/"
+              className="font-display text-lg font-semibold tracking-tight"
+            >
+              MyCartao
+            </Link>
+          ) : (
+            <span className="font-display text-lg font-semibold tracking-tight">
+              {displayName}
+            </span>
+          )}
           <Link
             href={`/c/${slugOrId}/presence`}
-            className="text-sm font-medium text-teal transition hover:text-teal-deep"
+            className="text-sm font-medium transition opacity-80 hover:opacity-100"
+            style={{ color: "var(--card-accent)" }}
           >
             Presence Mode
           </Link>
@@ -89,7 +116,7 @@ export default function PublicCardPage() {
           ) : null}
 
           {!card && !error ? (
-            <p className="animate-fade text-sm text-ink-soft">Carregando…</p>
+            <p className="animate-fade text-sm opacity-70">Carregando…</p>
           ) : null}
 
           {card ? (
@@ -99,32 +126,50 @@ export default function PublicCardPage() {
                 <img
                   src={avatar}
                   alt=""
-                  className="mb-7 h-36 w-36 rounded-full object-cover ring-2 ring-sand sm:h-40 sm:w-40"
+                  className="mb-7 h-36 w-36 rounded-full object-cover ring-2 sm:h-40 sm:w-40"
+                  style={{ ["--tw-ring-color" as string]: "var(--card-ring)" }}
                 />
               ) : (
-                <div className="mb-7 flex h-36 w-36 items-center justify-center rounded-full bg-teal/15 font-display text-4xl text-teal sm:h-40 sm:w-40">
+                <div
+                  className="mb-7 flex h-36 w-36 items-center justify-center rounded-full font-display text-4xl sm:h-40 sm:w-40"
+                  style={{
+                    background: "color-mix(in srgb, var(--card-accent) 18%, transparent)",
+                    color: "var(--card-accent)",
+                  }}
+                >
                   {displayName.slice(0, 1).toUpperCase()}
                 </div>
               )}
-              <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h1
+                className={`font-semibold tracking-tight sm:text-5xl ${
+                  theme === "bold" ? "font-sans text-4xl" : "font-display text-4xl"
+                }`}
+              >
                 {displayName}
               </h1>
-              {company ? (
-                <p className="animate-rise-delay mt-3 text-lg text-ink-soft">
-                  {company}
+              {headline ? (
+                <p className="animate-rise-delay mt-3 text-lg opacity-80">
+                  {headline}
+                </p>
+              ) : null}
+              {card.bio ? (
+                <p className="mt-4 text-base leading-relaxed opacity-75">
+                  {card.bio}
                 </p>
               ) : null}
 
               {visibleFields.length > 0 ? (
                 <ul className="animate-rise-delay mt-10 space-y-1">
                   {visibleFields.map((key) => (
-                    <li key={key} className="border-b border-line py-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-ink-soft/70">
+                    <li
+                      key={key}
+                      className="border-b py-3"
+                      style={{ borderColor: "var(--card-line)" }}
+                    >
+                      <p className="text-xs font-medium uppercase tracking-wide opacity-60">
                         {FIELD_LABELS[key]}
                       </p>
-                      <p className="mt-0.5 text-ink">
-                        {fieldStr(card.fields, key)}
-                      </p>
+                      <p className="mt-0.5">{fieldStr(card.fields, key)}</p>
                     </li>
                   ))}
                 </ul>
@@ -141,7 +186,8 @@ export default function PublicCardPage() {
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block w-full border-b border-line py-3.5 text-base font-semibold text-ink transition hover:border-teal hover:text-teal"
+                      className="block w-full border-b py-3.5 text-base font-semibold transition"
+                      style={{ borderColor: "var(--card-line)" }}
                     >
                       {link.title}
                     </a>
@@ -152,13 +198,15 @@ export default function PublicCardPage() {
               <div className="animate-rise-delay-2 mt-12 flex flex-col gap-3 sm:flex-row">
                 <a
                   href={`/api/v1/public/cards/${slugOrId}/vcard.vcf`}
-                  className="inline-flex items-center justify-center rounded-md bg-teal px-5 py-2.5 text-sm font-semibold text-paper transition hover:bg-teal-deep"
+                  className="inline-flex items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold text-white transition"
+                  style={{ background: "var(--card-accent)" }}
                 >
                   Salvar contato
                 </a>
                 <Link
                   href={`/p/${slugOrId}`}
-                  className="inline-flex items-center justify-center rounded-md border border-line bg-paper/70 px-5 py-2.5 text-sm font-medium text-ink transition hover:border-teal/40"
+                  className="inline-flex items-center justify-center rounded-md border px-5 py-2.5 text-sm font-medium transition"
+                  style={{ borderColor: "var(--card-line)" }}
                 >
                   Ver portfólio
                 </Link>
