@@ -42,13 +42,23 @@ def test_print_pdf_free_has_body(auth_client_free, card_id):
 
 
 def test_vcard_auth(auth_client_free, card_id):
+    # Ensure profile display_name is the person shown in FN/N (not company).
+    me = auth_client_free.patch(
+        "/api/v1/me", json={"display_name": "Ana Silva"}
+    )
+    assert me.status_code == 200
+
     r = auth_client_free.get(f"/api/v1/cards/{card_id}/vcard.vcf")
     assert r.status_code == 200
     assert "text/vcard" in r.headers["content-type"]
     body = r.content.decode("utf-8")
     assert "BEGIN:VCARD" in body
     assert "END:VCARD" in body
+    assert "FN:Ana Silva" in body
+    assert "N:Silva;Ana;;;" in body
+    assert "ORG:Crown" in body
     assert "export@example.com" in body
+    assert "FN:Crown" not in body
 
 
 def test_vcard_public(auth_client_free, card_id):

@@ -11,6 +11,7 @@ type PublicCard = {
   id: string;
   title: string;
   fields: Record<string, unknown>;
+  display_name?: string | null;
 };
 
 export default function PresenceModePage() {
@@ -61,7 +62,8 @@ export default function PresenceModePage() {
   const presenceLinks = card
     ? parseCustomLinks(card.fields).slice(0, 3)
     : [];
-  const displayName = card?.title?.trim() || "MyCartao";
+  const displayName =
+    card?.display_name?.trim() || card?.title?.trim() || "MyCartao";
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0c2a2e] text-paper">
