@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import os
 from unittest.mock import patch
 
@@ -14,6 +15,11 @@ from app.db import Base, SessionLocal, engine
 from app.main import app as fastapi_app
 from app.models.user import User
 import app.models  # noqa: F401 — register metadata
+
+# 1x1 PNG
+_PNG_1X1 = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -37,6 +43,18 @@ def _clean_tables():
         for table in reversed(Base.metadata.sorted_tables):
             conn.execute(table.delete())
     yield
+
+
+@pytest.fixture(autouse=True)
+def _mock_minio_ensure_bucket():
+    """Host has no Docker/MinIO — never hit real ensure_bucket on TestClient lifespan."""
+    with patch("app.main.ensure_bucket"):
+        yield
+
+
+@pytest.fixture
+def png_bytes() -> bytes:
+    return _PNG_1X1
 
 
 def _auth_client(email: str, token: str, plan: str) -> TestClient:
