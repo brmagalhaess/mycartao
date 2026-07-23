@@ -35,7 +35,7 @@ export default function LoginPage() {
 
       setStatus("sent");
       setMessage(
-        "Link enviado. Abra o e-mail e clique para entrar. Em dev, o link também aparece no log do backend.",
+        "Link enviado. Abra o e-mail e clique para entrar na sua conta.",
       );
     } catch {
       setStatus("error");

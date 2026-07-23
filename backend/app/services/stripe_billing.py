@@ -22,6 +22,12 @@ def _require_stripe_api() -> None:
             "billing_not_configured",
             status_code=503,
         )
+    if settings.is_production() and settings.stripe_mode() == "test":
+        raise AppError(
+            "Pagamentos ainda em modo teste. Configure a chave live (sk_live_...) no servidor.",
+            "stripe_test_mode",
+            status_code=503,
+        )
     stripe.api_key = settings.stripe_secret_key
 
 

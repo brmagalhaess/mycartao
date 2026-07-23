@@ -5,15 +5,26 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
+type BillingStatus = {
+  environment: string;
+  stripe_mode: string;
+};
+
 export default function BillingPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<string | null>(null);
+  const [status, setStatus] = useState<BillingStatus | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      const statusRes = await apiFetch("/api/v1/billing/status");
+      if (statusRes.ok && !cancelled) {
+        setStatus((await statusRes.json()) as BillingStatus);
+      }
+
       const res = await apiFetch("/api/v1/auth/whoami");
       if (res.status === 401) {
         router.replace("/login");
@@ -48,8 +59,13 @@ export default function BillingPage() {
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as {
           detail?: string;
+          code?: string;
         } | null;
-        setError(data?.detail ?? "Não foi possível iniciar o checkout.");
+        setError(
+          data?.code === "stripe_test_mode"
+            ? "Pagamentos ainda em modo teste. Configure a Stripe live no servidor."
+            : (data?.detail ?? "Não foi possível iniciar o checkout."),
+        );
         return;
       }
       const data = (await res.json()) as { url: string };
@@ -66,6 +82,7 @@ export default function BillingPage() {
   }
 
   const isPro = plan === "pro" || plan === "admin";
+  const stripeTest = status?.stripe_mode === "test";
 
   return (
     <main>
@@ -75,6 +92,17 @@ export default function BillingPage() {
       <p className="animate-rise-delay mt-2 text-ink-soft">
         Gerencie seu plano Free ou Pro.
       </p>
+
+      {stripeTest ? (
+        <p
+          role="status"
+          className="mt-6 rounded-md border border-amber-700/30 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+        >
+          Stripe em <strong>modo teste</strong>. Para cobrar de verdade,
+          configure <code className="text-xs">sk_live_…</code>, preço live e
+          webhook live no Dokploy.
+        </p>
+      ) : null}
 
       {error ? (
         <p role="alert" className="mt-6 text-sm text-red-800">
@@ -113,11 +141,17 @@ export default function BillingPage() {
               <button
                 type="button"
                 onClick={subscribe}
-                disabled={loading}
+                disabled={loading || stripeTest}
                 className="mt-8 inline-flex rounded-md bg-teal px-6 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
               >
                 {loading ? "Redirecionando…" : "Assinar Pro"}
               </button>
+              {stripeTest ? (
+                <p className="mt-3 text-xs text-ink-soft">
+                  Botão desativado enquanto a Stripe estiver em teste no
+                  servidor de produção.
+                </p>
+              ) : null}
             </>
           )}
         </div>

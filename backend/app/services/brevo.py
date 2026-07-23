@@ -3,10 +3,18 @@ from __future__ import annotations
 import httpx
 
 from app.config import settings
+from app.core.errors import AppError
 
 
 def send_magic_link_email(email: str, link: str) -> None:
     if not settings.brevo_api_key:
+        if settings.is_production():
+            raise AppError(
+                "Envio de e-mail não configurado. Tente mais tarde.",
+                "email_not_configured",
+                status_code=503,
+            )
+        # Local/dev only — never print magic links in production.
         print(f"[brevo-dev] magic link for {email}: {link}")
         return
     payload = {

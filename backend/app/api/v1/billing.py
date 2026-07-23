@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.deps import get_current_user
 from app.models.user import User
@@ -19,6 +20,15 @@ router = APIRouter()
 
 class CheckoutBody(BaseModel):
     plan_id: Optional[UUID] = None
+
+
+@router.get("/status")
+def billing_status():
+    """Public-ish status for UI (no secrets). Auth optional not required."""
+    return {
+        "environment": "production" if settings.is_production() else "development",
+        "stripe_mode": settings.stripe_mode(),
+    }
 
 
 @router.get("/plans", response_model=List[PlanResponse])

@@ -145,9 +145,10 @@ def ensure_pro_plan(
     """Idempotent seed for MyCartao Pro R$19,90."""
     existing = db.query(Plan).filter(Plan.code == "pro").one_or_none()
     if existing:
-        if stripe_price_id and not existing.stripe_price_id:
+        # Keep plan price in sync with env (e.g. switch test → live Price ID).
+        if stripe_price_id:
             existing.stripe_price_id = stripe_price_id
-        if stripe_product_id and not existing.stripe_product_id:
+        if stripe_product_id:
             existing.stripe_product_id = stripe_product_id
         if not existing.is_default:
             _clear_other_defaults(db, keep_id=existing.id)
