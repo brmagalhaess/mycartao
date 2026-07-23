@@ -73,7 +73,13 @@ def update_card(db: Session, user: User, card_id: UUID, data: CardUpdate) -> Car
     card = get_card_for_user(db, user, card_id)
     payload = data.model_dump(exclude_unset=True)
     if "fields" in payload:
-        payload["fields"] = gate_custom_links(user, payload["fields"]) or {}
+        fields = gate_custom_links(user, payload["fields"]) or {}
+        # Free replace-all must not wipe Pro-era custom_links (cannot clear/modify here).
+        if user.plan not in PRO_PLANS:
+            existing_links = (card.fields or {}).get("custom_links")
+            if existing_links:
+                fields = {**fields, "custom_links": existing_links}
+        payload["fields"] = fields
     if payload.get("is_primary") is True:
         _clear_primary(db, card.profile_id)
     for key, value in payload.items():

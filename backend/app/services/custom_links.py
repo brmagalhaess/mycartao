@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 from app.core.errors import AppError
 from app.models.user import User
@@ -58,11 +59,16 @@ def normalize_custom_links(raw: Any) -> List[Dict[str, Any]]:
             )
 
         url = item.get("url")
-        if not isinstance(url, str) or not (
-            url.startswith("http://") or url.startswith("https://")
-        ):
+        if not isinstance(url, str):
             raise AppError(
                 "url do custom_link deve começar com http:// ou https://",
+                "invalid_custom_link",
+                status_code=400,
+            )
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise AppError(
+                "url do custom_link deve ser http(s) com host válido",
                 "invalid_custom_link",
                 status_code=400,
             )
