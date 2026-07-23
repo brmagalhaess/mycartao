@@ -9,6 +9,7 @@ import {
   parseCustomLinks,
 } from "@/lib/custom-links";
 import CustomLinksEditor from "@/components/CustomLinksEditor";
+import ShareLinksBlock from "@/components/ShareLinksBlock";
 import {
   ContactsSection,
   FIELD_KEYS,
@@ -25,10 +26,12 @@ type Card = {
 };
 
 type Profile = {
+  id: string;
   display_name: string | null;
   headline: string | null;
   theme: string | null;
   avatar_key: string | null;
+  slug: string | null;
 };
 
 type Props = {
@@ -80,10 +83,13 @@ export default function CardEditor({ cardId }: Props) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [plan, setPlan] = useState("free");
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
+  const [slug, setSlug] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("");
 
   const isPro = plan === "pro" || plan === "admin";
 
   useEffect(() => {
+    setOrigin(window.location.origin);
     let cancelled = false;
 
     async function load() {
@@ -124,6 +130,7 @@ export default function CardEditor({ cardId }: Props) {
       if (cancelled) return;
 
       setTitle(card.title);
+      setSlug(profile.slug);
       setDisplayName(profile.display_name ?? "");
       setHeadline(profile.headline ?? "");
       setTheme(profile.theme ?? "minimal");
@@ -378,6 +385,18 @@ export default function CardEditor({ cardId }: Props) {
           ) : null}
         </div>
       </form>
+
+      {origin ? (
+        <div className="mt-14 max-w-xl border-t border-line pt-10">
+          <ShareLinksBlock
+            kind="card"
+            commonPath={`/c/${cardId}`}
+            personalizedPath={slug ? `/c/${slug}` : null}
+            isPro={isPro}
+            origin={origin}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

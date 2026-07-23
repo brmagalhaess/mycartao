@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import ShareLinksBlock from "@/components/ShareLinksBlock";
 
 type Card = {
   id: string;
@@ -12,16 +13,35 @@ type Card = {
   fields: Record<string, unknown>;
 };
 
+type Profile = {
+  id: string;
+  slug: string | null;
+};
+
 export default function AppDashboardPage() {
   const router = useRouter();
   const [cards, setCards] = useState<Card[] | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [plan, setPlan] = useState("free");
+  const [origin, setOrigin] = useState("");
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
+    setOrigin(window.location.origin);
     let cancelled = false;
 
     async function load() {
+      const who = await apiFetch("/api/v1/auth/whoami");
+      if (who.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      if (who.ok) {
+        const user = (await who.json()) as { plan: string };
+        if (!cancelled) setPlan(user.plan);
+      }
+
       const meRes = await apiFetch("/api/v1/me");
       if (meRes.status === 401) {
         router.replace("/login");
@@ -31,6 +51,8 @@ export default function AppDashboardPage() {
         if (!cancelled) setError("Não foi possível carregar o perfil.");
         return;
       }
+      const me = (await meRes.json()) as Profile;
+      if (!cancelled) setProfile(me);
 
       const cardsRes = await apiFetch("/api/v1/cards");
       if (cardsRes.status === 401) {
@@ -54,6 +76,12 @@ export default function AppDashboardPage() {
       cancelled = true;
     };
   }, [router]);
+
+  const isPro = plan === "pro" || plan === "admin";
+  const shareCard = useMemo(() => {
+    if (!cards?.length) return null;
+    return cards.find((c) => c.is_primary) ?? cards[0];
+  }, [cards]);
 
   async function createCard() {
     setCreating(true);
@@ -157,6 +185,25 @@ export default function AppDashboardPage() {
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {origin && shareCard && profile ? (
+        <div className="mt-14 max-w-2xl space-y-12 border-t border-line pt-10">
+          <ShareLinksBlock
+            kind="card"
+            commonPath={`/c/${shareCard.id}`}
+            personalizedPath={profile.slug ? `/c/${profile.slug}` : null}
+            isPro={isPro}
+            origin={origin}
+          />
+          <ShareLinksBlock
+            kind="portfolio"
+            commonPath={`/p/${profile.id}`}
+            personalizedPath={profile.slug ? `/p/${profile.slug}` : null}
+            isPro={isPro}
+            origin={origin}
+          />
+        </div>
       ) : null}
     </main>
   );

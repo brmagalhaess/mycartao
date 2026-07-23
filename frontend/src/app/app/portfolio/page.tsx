@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import ShareLinksBlock from "@/components/ShareLinksBlock";
 
 type PortfolioItem = {
   id: string;
@@ -14,9 +15,17 @@ type PortfolioItem = {
   sort_order: number;
 };
 
+type Profile = {
+  id: string;
+  slug: string | null;
+};
+
 export default function PortfolioManagePage() {
   const router = useRouter();
   const [items, setItems] = useState<PortfolioItem[] | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [plan, setPlan] = useState("free");
+  const [origin, setOrigin] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState(false);
@@ -26,12 +35,28 @@ export default function PortfolioManagePage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
 
+  const isPro = plan === "pro" || plan === "admin";
+
   async function load() {
+    const who = await apiFetch("/api/v1/auth/whoami");
+    if (who.status === 401) {
+      router.replace("/login");
+      return;
+    }
+    if (who.ok) {
+      const user = (await who.json()) as { plan: string };
+      setPlan(user.plan);
+    }
+
     const meRes = await apiFetch("/api/v1/me");
     if (meRes.status === 401) {
       router.replace("/login");
       return;
     }
+    if (meRes.ok) {
+      setProfile((await meRes.json()) as Profile);
+    }
+
     const res = await apiFetch("/api/v1/portfolio");
     if (res.status === 401) {
       router.replace("/login");
@@ -45,6 +70,7 @@ export default function PortfolioManagePage() {
   }
 
   useEffect(() => {
+    setOrigin(window.location.origin);
     let cancelled = false;
     load().catch(() => {
       if (!cancelled) setError("Falha de rede ao carregar portfólio.");
@@ -125,7 +151,7 @@ export default function PortfolioManagePage() {
         Portfólio
       </h1>
       <p className="animate-rise-delay mt-2 text-ink-soft">
-        Gerencie projetos e serviços exibidos em /p/…
+        Gerencie projetos e serviços e compartilhe o link público.
       </p>
 
       {error ? (
@@ -135,6 +161,18 @@ export default function PortfolioManagePage() {
       ) : null}
       {message ? (
         <p className="mt-6 text-sm text-teal-deep">{message}</p>
+      ) : null}
+
+      {origin && profile ? (
+        <div className="mt-10 max-w-2xl border-b border-line pb-10">
+          <ShareLinksBlock
+            kind="portfolio"
+            commonPath={`/p/${profile.id}`}
+            personalizedPath={profile.slug ? `/p/${profile.slug}` : null}
+            isPro={isPro}
+            origin={origin}
+          />
+        </div>
       ) : null}
 
       <form

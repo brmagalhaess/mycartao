@@ -2,9 +2,9 @@ import Link from "next/link";
 
 const FREE_FEATURES = [
   "1 cartão digital",
-  "Link por ID + QR",
-  "Presence Mode",
-  "API de avatar (estilo Gravatar) — grátis",
+  "Link comum do cartão e portfólio (por ID)",
+  "QR + Presence Mode",
+  "API de avatar (estilo Gravatar)",
   "Portfólio com até 3 itens",
   "Analytics 7 dias",
   "Print PDF com watermark",
@@ -12,8 +12,8 @@ const FREE_FEATURES = [
 
 const PRO_FEATURES = [
   "Cartões ilimitados",
-  "Slug personalizado",
-  "Links personalizados no cartão",
+  "Link personalizado (slug) no cartão e portfólio",
+  "Links personalizados (botões) no cartão",
   "Smart Card com regras",
   "Sem watermark + Print Kit",
   "Portfólio ilimitado",
