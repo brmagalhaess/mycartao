@@ -2,63 +2,92 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-mycartao}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mycartao}
+      POSTGRES_DB: ${POSTGRES_DB:-mycartao}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mycartao}"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    networks:
+      - dokploy-network
 
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     volumes:
       - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+    # Sem bind em host — evita conflito de porta no Dokploy/VPS
+    expose:
+      - "9000"
+      - "9001"
     healthcheck:
-      # minio/minio often lacks curl; wget is more common. Backend waits on service_started.
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:9000/minio/health/live || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    networks:
+      - dokploy-network
 
   backend:
     build: ./backend
-    env_file: .env
-    ports:
-      - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://mycartao:mycartao@db:5432/mycartao}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-long-secret}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-noreply@example.com}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-MyCartao}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-mycartao}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+    expose:
+      - "8000"
     depends_on:
       db:
         condition: service_healthy
       minio:
         condition: service_started
     restart: unless-stopped
+    networks:
+      - dokploy-network
 
   frontend:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
-    env_file: .env
+        # URL pública da API (domínio do backend no Dokploy)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-    ports:
-      - "3000:3000"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    # Só porta do container — Dokploy/Traefik faz o roteamento (evita "port already allocated")
+    expose:
+      - "3000"
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - dokploy-network
 
 volumes:
   pgdata:
   minio_data:
+
+networks:
+  dokploy-network:
+    external: true
