@@ -10,6 +10,12 @@ export default function HomePage() {
           </span>
           <nav className="flex items-center gap-5 text-sm font-medium">
             <Link
+              href="/developers"
+              className="text-ink-soft transition hover:text-teal"
+            >
+              Developers
+            </Link>
+            <Link
               href="/pricing"
               className="text-ink-soft transition hover:text-teal"
             >
@@ -56,6 +62,12 @@ export default function HomePage() {
               className="inline-flex items-center justify-center rounded-md border border-line bg-paper/60 px-6 py-3 text-base font-medium text-ink transition hover:border-teal/40 hover:bg-paper"
             >
               Ver planos
+            </Link>
+            <Link
+              href="/developers"
+              className="inline-flex items-center justify-center px-2 py-3 text-base font-medium text-ink-soft transition hover:text-teal sm:ml-1"
+            >
+              Developers →
             </Link>
           </div>
         </main>
