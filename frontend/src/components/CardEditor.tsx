@@ -154,10 +154,35 @@ export default function CardEditor({ cardId }: Props) {
         return;
       }
 
-      const data = (await res.json()) as { url: string };
+      const data = (await res.json()) as { url: string; id: string };
+      const updatedFields = { ...fields, avatar: data.url };
+
+      const cardRes = await apiFetch(`/api/v1/cards/${cardId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          title: title.trim() || "Meu cartão",
+          fields: updatedFields,
+        }),
+      });
+
+      if (cardRes.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      if (!cardRes.ok) {
+        const errData = (await cardRes.json().catch(() => null)) as {
+          detail?: string;
+        } | null;
+        setError(
+          errData?.detail ??
+            "Avatar enviado, mas não foi possível salvar no cartão.",
+        );
+        return;
+      }
+
       setAvatarPreview(data.url);
-      setFields((prev) => ({ ...prev, avatar: data.url }));
-      setMessage("Avatar enviado.");
+      setFields(updatedFields);
+      setMessage("Avatar enviado e salvo.");
     } catch {
       setError("Falha de rede no upload.");
     } finally {
