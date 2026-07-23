@@ -58,6 +58,7 @@ def png_bytes() -> bytes:
 
 
 def _auth_client(email: str, token: str, plan: str) -> TestClient:
+    """Magic-link login + optional plan upgrade; returns cookie-authenticated client."""
     client = TestClient(fastapi_app)
     with patch("app.services.auth.secrets.token_urlsafe", return_value=token):
         with patch("app.services.auth.send_magic_link_email"):
@@ -78,9 +79,11 @@ def _auth_client(email: str, token: str, plan: str) -> TestClient:
 
 @pytest.fixture
 def auth_client_free() -> TestClient:
+    """Authenticated TestClient with plan=free."""
     return _auth_client("free@example.com", "free-token", "free")
 
 
 @pytest.fixture
 def auth_client_pro() -> TestClient:
+    """Authenticated TestClient with plan=pro."""
     return _auth_client("pro@example.com", "pro-token", "pro")
