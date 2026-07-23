@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api";
 const NAV = [
   { href: "/app", label: "Cartões" },
   { href: "/app/portfolio", label: "Portfólio" },
+  { href: "/app/smart", label: "Smart" },
   { href: "/app/analytics", label: "Analytics" },
   { href: "/app/billing", label: "Cobrança" },
   { href: "/app/settings", label: "Configurações" },
