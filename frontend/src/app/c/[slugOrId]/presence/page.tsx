@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { API_BASE, apiFetch } from "@/lib/api";
+import { apiFetch, toMediaSrc } from "@/lib/api";
 
 type PublicCard = {
   id: string;
@@ -54,7 +54,9 @@ export default function PresenceModePage() {
   }, [slugOrId]);
 
   const avatar =
-    card && typeof card.fields.avatar === "string" ? card.fields.avatar : null;
+    card && typeof card.fields.avatar === "string"
+      ? toMediaSrc(card.fields.avatar)
+      : null;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0c2a2e] text-paper">
@@ -119,7 +121,7 @@ export default function PresenceModePage() {
             </div>
 
             <a
-              href={`${API_BASE}/api/v1/public/cards/${slugOrId}/vcard.vcf`}
+              href={`/api/v1/public/cards/${slugOrId}/vcard.vcf`}
               className="animate-rise-delay-2 inline-flex items-center justify-center rounded-md bg-sand px-6 py-3 text-base font-semibold text-ink transition hover:bg-sand-warm"
             >
               Salvar contato

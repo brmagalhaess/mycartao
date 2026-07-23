@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, toMediaSrc } from "@/lib/api";
 
 const FIELD_KEYS = [
   { key: "phone", label: "Telefone" },
@@ -101,7 +101,7 @@ export default function CardEditor({ cardId }: Props) {
       );
       const avatar =
         typeof card.fields.avatar === "string"
-          ? card.fields.avatar
+          ? toMediaSrc(card.fields.avatar)
           : null;
       setAvatarPreview(avatar);
       setLoading(false);
@@ -155,7 +155,8 @@ export default function CardEditor({ cardId }: Props) {
       }
 
       const data = (await res.json()) as { url: string; id: string };
-      const updatedFields = { ...fields, avatar: data.url };
+      const mediaUrl = toMediaSrc(data.url);
+      const updatedFields = { ...fields, avatar: mediaUrl };
 
       const cardRes = await apiFetch(`/api/v1/cards/${cardId}`, {
         method: "PATCH",
@@ -180,7 +181,7 @@ export default function CardEditor({ cardId }: Props) {
         return;
       }
 
-      setAvatarPreview(data.url);
+      setAvatarPreview(mediaUrl);
       setFields(updatedFields);
       setMessage("Avatar enviado e salvo.");
     } catch {

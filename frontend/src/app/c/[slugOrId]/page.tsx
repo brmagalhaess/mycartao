@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { API_BASE, apiFetch } from "@/lib/api";
+import { apiFetch, toMediaSrc } from "@/lib/api";
 
 const FIELD_LABELS: Record<string, string> = {
   phone: "Telefone",
@@ -52,7 +52,7 @@ export default function PublicCardPage() {
     };
   }, [slugOrId]);
 
-  const avatar = card ? fieldStr(card.fields, "avatar") : "";
+  const avatar = card ? toMediaSrc(fieldStr(card.fields, "avatar")) : "";
   const visibleFields = card
     ? Object.keys(FIELD_LABELS).filter((k) => fieldStr(card.fields, k))
     : [];
@@ -114,7 +114,7 @@ export default function PublicCardPage() {
               ) : null}
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                 <a
-                  href={`${API_BASE}/api/v1/public/cards/${slugOrId}/vcard.vcf`}
+                  href={`/api/v1/public/cards/${slugOrId}/vcard.vcf`}
                   className="inline-flex items-center justify-center rounded-md bg-teal px-5 py-2.5 text-sm font-semibold text-paper transition hover:bg-teal-deep"
                 >
                   Salvar contato

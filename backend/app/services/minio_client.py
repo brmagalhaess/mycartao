@@ -47,12 +47,24 @@ def ensure_bucket() -> None:
 
 
 def public_url(bucket_key: str) -> str:
-    scheme = "https" if settings.minio_use_ssl else "http"
-    return f"{scheme}://{settings.minio_public_endpoint}/{settings.minio_bucket}/{bucket_key}"
+    """Same-origin path served by the API (never expose MinIO host to browsers)."""
+    key = bucket_key.lstrip("/")
+    return f"/api/v1/media/files/{key}"
+
+
+def open_object(bucket_key: str):
+    """Return a MinIO object response, or None if missing."""
+    client = get_client()
+    try:
+        return client.get_object(settings.minio_bucket, bucket_key)
+    except S3Error as exc:
+        if exc.code in {"NoSuchKey", "NoSuchBucket", "NoSuchObject"}:
+            return None
+        raise
 
 
 def upload_bytes(bucket_key: str, data: bytes, content_type: str) -> str:
-    """Put object in MinIO and return a public HTTP(S) URL."""
+    """Put object in MinIO and return a same-origin media URL."""
     client = get_client()
     client.put_object(
         settings.minio_bucket,

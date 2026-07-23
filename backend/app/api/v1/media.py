@@ -4,6 +4,7 @@ import uuid
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
@@ -18,6 +19,32 @@ router = APIRouter()
 
 ALLOWED_PURPOSES = frozenset({"avatar", "portfolio", "print"})
 PRO_PLANS = frozenset({"pro", "admin"})
+
+
+@router.get("/files/{bucket_key:path}")
+def serve_media_file(bucket_key: str):
+    """Proxy MinIO objects on the API host (same-origin for browsers)."""
+    if not bucket_key or ".." in bucket_key or bucket_key.startswith("/"):
+        raise AppError("Chave inválida", "invalid_key", status_code=400)
+
+    obj = minio_client.open_object(bucket_key)
+    if obj is None:
+        raise AppError("Arquivo não encontrado", "not_found", status_code=404)
+
+    content_type = obj.headers.get("Content-Type") or "application/octet-stream"
+
+    def iterfile():
+        try:
+            yield from obj.stream(32 * 1024)
+        finally:
+            obj.close()
+            obj.release_conn()
+
+    return StreamingResponse(
+        iterfile(),
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 @router.post(

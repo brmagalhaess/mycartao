@@ -1,12 +1,25 @@
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+
+from fastapi.testclient import TestClient
+
+from app.main import app as fastapi_app
+from app.services.minio_client import public_url
+
+
+def _fake_upload(key: str, data: bytes, content_type: str) -> str:
+    return public_url(key)
+
+
+def test_public_url_is_same_origin():
+    assert public_url("user/avatar/a.png") == "/api/v1/media/files/user/avatar/a.png"
 
 
 def test_upload_avatar(auth_client_free, png_bytes):
     with patch(
         "app.api.v1.media.minio_client.upload_bytes",
-        side_effect=lambda key, data, content_type: f"http://localhost:9000/mycartao/{key}",
+        side_effect=_fake_upload,
     ):
         r = auth_client_free.post(
             "/api/v1/media/upload",
@@ -15,15 +28,33 @@ def test_upload_avatar(auth_client_free, png_bytes):
         )
     assert r.status_code == 201
     body = r.json()
-    assert body["url"].startswith("http")
+    assert body["url"].startswith("/api/v1/media/files/")
     assert body["purpose"] == "avatar"
     assert "id" in body
+
+
+def test_serve_media_file_proxies_minio():
+    mock_obj = MagicMock()
+    mock_obj.headers = {"Content-Type": "image/png"}
+    mock_obj.stream.return_value = iter([b"\x89PNG"])
+
+    with patch(
+        "app.api.v1.media.minio_client.open_object",
+        return_value=mock_obj,
+    ):
+        r = TestClient(fastapi_app).get("/api/v1/media/files/user/avatar/a.png")
+
+    assert r.status_code == 200
+    assert r.content == b"\x89PNG"
+    assert r.headers["content-type"].startswith("image/png")
+    mock_obj.close.assert_called_once()
+    mock_obj.release_conn.assert_called_once()
 
 
 def test_free_avatar_limit(auth_client_free, png_bytes):
     with patch(
         "app.api.v1.media.minio_client.upload_bytes",
-        side_effect=lambda key, data, content_type: f"http://localhost:9000/mycartao/{key}",
+        side_effect=_fake_upload,
     ):
         first = auth_client_free.post(
             "/api/v1/media/upload",
@@ -64,7 +95,7 @@ def test_reject_too_large(auth_client_free):
 def test_pro_can_upload_second_avatar(auth_client_pro, png_bytes):
     with patch(
         "app.api.v1.media.minio_client.upload_bytes",
-        side_effect=lambda key, data, content_type: f"http://localhost:9000/mycartao/{key}",
+        side_effect=_fake_upload,
     ):
         assert (
             auth_client_pro.post(

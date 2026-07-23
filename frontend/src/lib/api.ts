@@ -3,6 +3,8 @@ export const API_BASE = (
   process.env.NEXT_PUBLIC_API_URL ?? ""
 ).replace(/\/$/, "");
 
+export { toMediaSrc } from "./media";
+
 export async function apiFetch(
   path: string,
   init: RequestInit = {},
