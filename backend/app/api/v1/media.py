@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from typing import Literal
+from typing import List, Literal
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -15,11 +15,58 @@ from app.models.profile import Profile
 from app.models.user import User
 from app.schemas.media import MediaUploadResponse
 from app.services import minio_client
+from app.services.entitlements import is_pro
 
 router = APIRouter()
 
 ALLOWED_PURPOSES = frozenset({"avatar", "portfolio", "print"})
-PRO_PLANS = frozenset({"pro", "admin"})
+
+
+@router.get("", response_model=List[MediaUploadResponse])
+def list_media(
+    purpose: Literal["avatar", "portfolio", "print"] = Query("avatar"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Pro avatar gallery (and other purposes). Free may list current assets too."""
+    if purpose == "avatar" and not is_pro(user.plan):
+        # Free: at most the active profile avatar as a single-item list.
+        profile = db.query(Profile).filter(Profile.user_id == user.id).one_or_none()
+        if profile is None or not profile.avatar_key:
+            return []
+        asset = (
+            db.query(MediaAsset)
+            .filter(
+                MediaAsset.owner_id == user.id,
+                MediaAsset.bucket_key == profile.avatar_key,
+            )
+            .one_or_none()
+        )
+        if asset is None:
+            return []
+        return [
+            MediaUploadResponse(
+                id=asset.id,
+                url=minio_client.public_url(asset.bucket_key),
+                purpose=asset.purpose,  # type: ignore[arg-type]
+            )
+        ]
+
+    rows = (
+        db.query(MediaAsset)
+        .filter(MediaAsset.owner_id == user.id, MediaAsset.purpose == purpose)
+        .order_by(MediaAsset.created_at.desc())
+        .limit(40)
+        .all()
+    )
+    return [
+        MediaUploadResponse(
+            id=row.id,
+            url=minio_client.public_url(row.bucket_key),
+            purpose=row.purpose,  # type: ignore[arg-type]
+        )
+        for row in rows
+    ]
 
 
 @router.get("/files/{bucket_key:path}")
@@ -78,7 +125,7 @@ async def upload_media(
 
     # Avatar is free for all plans (including replace). Free keeps one active
     # avatar_key on the profile; Pro may accumulate uploads as a simple gallery.
-    if purpose == "avatar" and user.plan not in PRO_PLANS:
+    if purpose == "avatar" and not is_pro(user.plan):
         old_assets = (
             db.query(MediaAsset)
             .filter(MediaAsset.owner_id == user.id, MediaAsset.purpose == "avatar")

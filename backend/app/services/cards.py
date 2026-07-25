@@ -12,10 +12,8 @@ from app.models.profile import Profile
 from app.models.user import User
 from app.schemas.card import CardCreate, CardUpdate, PublicCardResponse
 from app.services.custom_links import gate_custom_links
+from app.services.entitlements import FREE_CARD_LIMIT, is_pro
 from app.services.profile import get_profile_for_user
-
-FREE_CARD_LIMIT = 1
-PRO_PLANS = frozenset({"pro", "admin"})
 
 # fields JSON keys: phone, email, company, whatsapp, website, linkedin, instagram, custom_links
 
@@ -32,7 +30,7 @@ def list_cards(db: Session, user: User) -> List[Card]:
 
 def create_card(db: Session, user: User, data: CardCreate) -> Card:
     profile = get_profile_for_user(db, user)
-    if user.plan not in PRO_PLANS:
+    if not is_pro(user.plan):
         count = db.query(Card).filter(Card.profile_id == profile.id).count()
         if count >= FREE_CARD_LIMIT:
             raise AppError(
@@ -75,7 +73,7 @@ def update_card(db: Session, user: User, card_id: UUID, data: CardUpdate) -> Car
     if "fields" in payload:
         fields = gate_custom_links(user, payload["fields"]) or {}
         # Free replace-all must not wipe Pro-era custom_links (cannot clear/modify here).
-        if user.plan not in PRO_PLANS:
+        if not is_pro(user.plan):
             existing_links = (card.fields or {}).get("custom_links")
             if existing_links:
                 fields = {**fields, "custom_links": existing_links}
@@ -135,7 +133,7 @@ def to_public_card_response(card: Card) -> PublicCardResponse:
     profile = card.profile
     owner = profile.user if profile is not None else None
     plan = owner.plan if owner is not None else "free"
-    brand = profile.brand_color if profile and plan in PRO_PLANS else None
+    brand = profile.brand_color if profile and is_pro(plan) else None
     return PublicCardResponse(
         id=card.id,
         title=card.title,
@@ -147,7 +145,7 @@ def to_public_card_response(card: Card) -> PublicCardResponse:
         bio=profile.bio if profile else None,
         theme=(profile.theme if profile else None) or "minimal",
         brand_color=brand,
-        show_mycartao_branding=plan not in PRO_PLANS,
+        show_mycartao_branding=not is_pro(plan),
         lead_capture_enabled=(
             bool(getattr(profile, "lead_capture_enabled", True)) if profile else False
         ),

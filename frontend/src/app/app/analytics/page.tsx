@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
@@ -149,23 +150,57 @@ export default function AnalyticsPage() {
 
       {summary ? (
         <div className="mt-10">
-          <div className="flex flex-wrap gap-8">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-ink-soft/70">
-                Views
-              </p>
-              <p className="mt-1 font-display text-4xl font-semibold">
-                {summary.views}
-              </p>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-wrap gap-8">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-soft/70">
+                  Views
+                </p>
+                <p className="mt-1 font-display text-4xl font-semibold">
+                  {summary.views}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-soft/70">
+                  Únicos (aprox.)
+                </p>
+                <p className="mt-1 font-display text-4xl font-semibold">
+                  {summary.unique_approx}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-ink-soft/70">
-                Únicos (aprox.)
-              </p>
-              <p className="mt-1 font-display text-4xl font-semibold">
-                {summary.unique_approx}
-              </p>
-            </div>
+            {plan === "pro" || plan === "admin" ? (
+              <a
+                href={`/api/v1/analytics/export?days=${days}`}
+                className="rounded-md border border-line bg-paper/70 px-4 py-2 text-sm font-semibold text-ink transition hover:border-teal/40"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  const res = await apiFetch(
+                    `/api/v1/analytics/export?days=${days}`,
+                  );
+                  if (!res.ok) {
+                    setError("Exportação disponível só no Pro.");
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "mycartao-analytics.csv";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Exportar CSV
+              </a>
+            ) : (
+              <Link
+                href="/app/billing"
+                className="text-sm font-medium text-teal hover:text-teal-deep"
+              >
+                Export CSV no Pro →
+              </Link>
+            )}
           </div>
           <h2 className="mt-10 font-display text-xl font-medium">Por dia</h2>
           <ByDayChart points={summary.by_day} />

@@ -9,6 +9,14 @@ type Props = {
   cardId: string;
 };
 
+type PrintTemplate = "classic" | "compact" | "bold";
+
+const TEMPLATES: { id: PrintTemplate; label: string; pro?: boolean }[] = [
+  { id: "classic", label: "Clássico (A4)" },
+  { id: "compact", label: "Compacto (cartão)", pro: true },
+  { id: "bold", label: "Bold (capa)", pro: true },
+];
+
 async function blobFromApi(path: string): Promise<Blob> {
   const res = await apiFetch(path);
   if (!res.ok) {
@@ -31,16 +39,24 @@ export default function QrPanel({ cardId }: Props) {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [isPro, setIsPro] = useState(false);
+  const [template, setTemplate] = useState<PrintTemplate>("classic");
 
   useEffect(() => {
     let cancelled = false;
     let objectUrl: string | null = null;
 
     async function load() {
-      const meRes = await apiFetch("/api/v1/me");
-      if (meRes.status === 401) {
+      const who = await apiFetch("/api/v1/auth/whoami");
+      if (who.status === 401) {
         router.replace("/login");
         return;
+      }
+      if (who.ok) {
+        const user = (await who.json()) as { plan: string };
+        if (!cancelled) {
+          setIsPro(user.plan === "pro" || user.plan === "admin");
+        }
       }
 
       const blob = await blobFromApi(
@@ -77,12 +93,14 @@ export default function QrPanel({ cardId }: Props) {
         triggerDownload(blob, `mycartao-${cardId}-qr.svg`);
       } else {
         const blob = await blobFromApi(
-          `/api/v1/cards/${cardId}/print.pdf`,
+          `/api/v1/cards/${cardId}/print.pdf?template=${template}`,
         );
-        triggerDownload(blob, `mycartao-${cardId}-print.pdf`);
+        triggerDownload(blob, `mycartao-${cardId}-${template}.pdf`);
       }
     } catch {
-      setError("Falha no download. Faça login novamente se a sessão expirou.");
+      setError(
+        "Falha no download. Free só gera o template clássico com watermark; Pro desbloqueia Compacto e Bold.",
+      );
     } finally {
       setBusy(null);
     }
@@ -99,10 +117,11 @@ export default function QrPanel({ cardId }: Props) {
         </Link>
       </p>
       <h1 className="mt-2 font-display text-3xl font-semibold">
-        QR e impressão
+        QR e Print Kit
       </h1>
       <p className="mt-2 max-w-lg text-ink-soft">
-        Baixe o QR em PNG ou SVG, ou o PDF pronto para gráfica.
+        Baixe o QR ou o PDF para gráfica. Free inclui watermark; Pro remove e
+        libera templates extras.
       </p>
 
       <div className="mt-8 flex flex-col gap-8 sm:flex-row sm:items-start">
@@ -138,6 +157,50 @@ export default function QrPanel({ cardId }: Props) {
           >
             {busy === "svg" ? "Baixando…" : "Baixar SVG"}
           </button>
+
+          <div className="mt-2 border-t border-line pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft/70">
+              Template do PDF
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {TEMPLATES.map((t) => {
+                const locked = Boolean(t.pro && !isPro);
+                const active = template === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    disabled={locked}
+                    onClick={() => setTemplate(t.id)}
+                    className={
+                      active
+                        ? "rounded-full bg-teal px-3 py-1.5 text-xs font-semibold text-paper"
+                        : locked
+                          ? "rounded-full border border-line px-3 py-1.5 text-xs text-ink-soft/50"
+                          : "rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink hover:border-teal/40"
+                    }
+                    title={locked ? "Disponível no Pro" : undefined}
+                  >
+                    {t.label}
+                    {t.pro ? " · Pro" : ""}
+                  </button>
+                );
+              })}
+            </div>
+            {!isPro ? (
+              <Link
+                href="/app/billing"
+                className="mt-2 inline-block text-xs font-medium text-teal hover:text-teal-deep"
+              >
+                Assinar Pro para Compacto/Bold sem watermark →
+              </Link>
+            ) : (
+              <p className="mt-2 text-xs text-ink-soft">
+                Pro: PDF sem watermark MyCartao.
+              </p>
+            )}
+          </div>
+
           <button
             type="button"
             disabled={busy !== null}

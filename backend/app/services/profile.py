@@ -9,11 +9,9 @@ from app.core.errors import AppError
 from app.models.profile import Profile
 from app.models.user import User
 from app.schemas.profile import ProfileUpdate
+from app.services.entitlements import FREE_THEMES, PRO_THEMES, is_pro
 
 SLUG_RE = re.compile(r"^[a-z0-9-]{3,32}$")
-PRO_PLANS = frozenset({"pro", "admin"})
-FREE_THEMES = frozenset({"minimal", "classic", "bold"})
-PRO_THEMES = frozenset({"minimal", "classic", "bold", "sand", "ink"})
 HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
@@ -30,7 +28,7 @@ def update_profile(db: Session, user: User, data: ProfileUpdate) -> Profile:
 
     if "theme" in payload and payload["theme"] is not None:
         theme = str(payload["theme"]).strip().lower()
-        allowed = PRO_THEMES if user.plan in PRO_PLANS else FREE_THEMES
+        allowed = PRO_THEMES if is_pro(user.plan) else FREE_THEMES
         if theme not in allowed:
             raise AppError(
                 "Tema indisponível no seu plano",
@@ -44,7 +42,7 @@ def update_profile(db: Session, user: User, data: ProfileUpdate) -> Profile:
         if color is None or color == "":
             payload["brand_color"] = None
         else:
-            if user.plan not in PRO_PLANS:
+            if not is_pro(user.plan):
                 raise AppError(
                     "Cor da marca requer plano Pro",
                     "brand_color_pro_only",
@@ -67,7 +65,7 @@ def update_profile(db: Session, user: User, data: ProfileUpdate) -> Profile:
 
 
 def set_slug(db: Session, user: User, slug: str | None) -> Profile:
-    if user.plan not in PRO_PLANS:
+    if not is_pro(user.plan):
         raise AppError(
             "Slug personalizado requer plano Pro",
             "plan_required",

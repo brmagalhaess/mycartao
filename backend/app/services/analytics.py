@@ -9,20 +9,18 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.core.errors import AppError
 from app.models.analytics import CardView
 from app.models.card import Card
 from app.models.user import User
+from app.services.entitlements import entitlements_for, is_pro
 from app.services.profile import get_profile_for_user
-
-PRO_PLANS = frozenset({"pro", "admin"})
-FREE_MAX_DAYS = 7
-PRO_MAX_DAYS = 90
 
 
 def clamp_days(plan: str, days: int) -> int:
     if days < 1:
         days = 1
-    max_days = PRO_MAX_DAYS if plan in PRO_PLANS else FREE_MAX_DAYS
+    max_days = int(entitlements_for(plan)["analytics"]["max_days"])
     return min(days, max_days)
 
 
@@ -97,3 +95,22 @@ def summary(db: Session, user: User, days: int) -> Dict[str, Any]:
         {"day": str(row.day), "views": int(row.views)} for row in rows
     ]
     return {"views": views, "unique_approx": int(unique_approx), "by_day": by_day}
+
+
+def export_csv(db: Session, user: User, days: int) -> str:
+    """CSV export of daily views — Pro only."""
+    if not is_pro(user.plan):
+        raise AppError(
+            "Exportação de analytics requer plano Pro",
+            "plan_required",
+            status_code=403,
+        )
+    data = summary(db, user, days)
+    lines = ["day,views"]
+    for row in data["by_day"]:
+        lines.append(f"{row['day']},{row['views']}")
+    lines.append("")
+    lines.append(f"# total_views,{data['views']}")
+    lines.append(f"# unique_approx,{data['unique_approx']}")
+    lines.append(f"# days,{clamp_days(user.plan, days)}")
+    return "\n".join(lines) + "\n"

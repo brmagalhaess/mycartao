@@ -11,14 +11,13 @@ from app.db import get_db
 from app.deps import get_current_user
 from app.models.user import User
 from app.services import cards as cards_service
+from app.services.entitlements import is_pro
 from app.services.print_pdf import generate_print_pdf
 from app.services.qr import generate_qr, public_card_url
 from app.services.vcard import generate_vcard
 
 router = APIRouter()
 public_router = APIRouter()
-
-PRO_PLANS = frozenset({"pro", "admin"})
 
 
 @router.get("/{card_id}/qr")
@@ -53,14 +52,23 @@ def get_card_qr(
 @router.get("/{card_id}/print.pdf")
 def get_card_print_pdf(
     card_id: UUID,
+    template: str = Query("classic"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     card = cards_service.get_card_for_user(db, user, card_id)
     profile = card.profile
-    watermark = user.plan not in PRO_PLANS
+    watermark = not is_pro(user.plan)
     try:
-        payload = generate_print_pdf(card, profile, watermark=watermark)
+        payload = generate_print_pdf(
+            card,
+            profile,
+            watermark=watermark,
+            template=template,
+            plan=user.plan,
+        )
+    except AppError:
+        raise
     except Exception as exc:
         raise AppError("Falha ao gerar PDF", "pdf_failed", status_code=500) from exc
 

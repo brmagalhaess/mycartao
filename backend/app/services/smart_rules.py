@@ -14,14 +14,14 @@ from app.models.profile import Profile
 from app.models.smart_rule import SmartRule
 from app.models.user import User
 from app.schemas.smart_rule import SmartRuleCreate, SmartRuleUpdate
+from app.services.entitlements import is_pro
 from app.services.profile import get_profile_for_user
 
-PRO_PLANS = frozenset({"pro", "admin"})
 VALID_TARGETS = frozenset({"card", "portfolio", "whatsapp"})
 
 
 def _require_pro(user: User) -> None:
-    if user.plan not in PRO_PLANS:
+    if not is_pro(user.plan):
         raise AppError(
             "Smart rules requerem plano Pro",
             "plan_required",

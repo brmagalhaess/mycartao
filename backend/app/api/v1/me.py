@@ -7,6 +7,7 @@ from app.db import get_db
 from app.deps import get_current_user
 from app.models.user import User
 from app.schemas.profile import ProfileResponse, ProfileUpdate, SlugUpdate
+from app.services import entitlements as entitlements_service
 from app.services import profile as profile_service
 
 router = APIRouter()
@@ -33,3 +34,11 @@ def patch_slug(
     db: Session = Depends(get_db),
 ):
     return profile_service.set_slug(db, user, body.slug)
+
+
+@router.get("/entitlements")
+def get_entitlements(user: User = Depends(get_current_user)):
+    """Capabilities unlocked by the current plan (Free / Pro / admin)."""
+    data = entitlements_service.entitlements_for(user.plan)
+    data["matrix"] = entitlements_service.feature_matrix()
+    return data

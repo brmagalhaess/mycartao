@@ -48,15 +48,20 @@ export default function BillingPage() {
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
+  const [matrix, setMatrix] = useState<{
+    free: { label: string }[];
+    pro: { label: string }[];
+  } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const intlLocale = locale === "pt" ? "pt-BR" : locale;
 
   const loadAll = useCallback(async () => {
-    const [ovRes, invRes] = await Promise.all([
+    const [ovRes, invRes, entRes] = await Promise.all([
       apiFetch("/api/v1/billing/subscription"),
       apiFetch("/api/v1/billing/history"),
+      apiFetch("/api/v1/me/entitlements"),
     ]);
     if (ovRes.status === 401) {
       router.replace("/login");
@@ -68,6 +73,12 @@ export default function BillingPage() {
       setInvoices(data.invoices);
     } else {
       setInvoices([]);
+    }
+    if (entRes.ok) {
+      const data = (await entRes.json()) as {
+        matrix?: { free: { label: string }[]; pro: { label: string }[] };
+      };
+      if (data.matrix) setMatrix(data.matrix);
     }
   }, [router]);
 
@@ -279,6 +290,37 @@ export default function BillingPage() {
               ) : null}
             </>
           )}
+        </section>
+      ) : null}
+
+      {matrix ? (
+        <section className="mt-8 grid gap-6 sm:grid-cols-2">
+          <div className="rounded-2xl border border-line bg-paper/70 p-6">
+            <h2 className="font-display text-lg font-semibold">Free</h2>
+            <ul className="mt-4 space-y-2 text-sm text-ink-soft">
+              {matrix.free.map((row) => (
+                <li key={row.label} className="flex gap-2">
+                  <span className="text-teal" aria-hidden>
+                    ✓
+                  </span>
+                  {row.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-teal/40 bg-teal/5 p-6">
+            <h2 className="font-display text-lg font-semibold">Pro</h2>
+            <ul className="mt-4 space-y-2 text-sm text-ink-soft">
+              {matrix.pro.map((row) => (
+                <li key={row.label} className="flex gap-2">
+                  <span className="text-teal" aria-hidden>
+                    ✓
+                  </span>
+                  {row.label}
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       ) : null}
 

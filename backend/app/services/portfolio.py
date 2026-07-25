@@ -11,10 +11,8 @@ from app.models.portfolio import PortfolioItem
 from app.models.profile import Profile
 from app.models.user import User
 from app.schemas.portfolio import PortfolioCreate, PortfolioUpdate
+from app.services.entitlements import FREE_PORTFOLIO_LIMIT, is_pro
 from app.services.profile import get_profile_for_user
-
-FREE_PORTFOLIO_LIMIT = 3
-PRO_PLANS = frozenset({"pro", "admin"})
 
 
 def list_items(db: Session, user: User) -> List[PortfolioItem]:
@@ -29,7 +27,7 @@ def list_items(db: Session, user: User) -> List[PortfolioItem]:
 
 def create_item(db: Session, user: User, data: PortfolioCreate) -> PortfolioItem:
     profile = get_profile_for_user(db, user)
-    if user.plan not in PRO_PLANS:
+    if not is_pro(user.plan):
         count = (
             db.query(PortfolioItem)
             .filter(PortfolioItem.profile_id == profile.id)
@@ -42,6 +40,14 @@ def create_item(db: Session, user: User, data: PortfolioCreate) -> PortfolioItem
                 status_code=403,
             )
 
+    category = data.category
+    if category and not is_pro(user.plan):
+        raise AppError(
+            "Categorias de portfólio requerem plano Pro",
+            "portfolio_category_pro_only",
+            status_code=403,
+        )
+
     item = PortfolioItem(
         profile_id=profile.id,
         type=data.type,
@@ -50,7 +56,7 @@ def create_item(db: Session, user: User, data: PortfolioCreate) -> PortfolioItem
         price=data.price,
         image_key=data.image_key,
         sort_order=data.sort_order,
-        category=data.category,
+        category=category,
     )
     db.add(item)
     db.commit()
@@ -75,6 +81,12 @@ def update_item(
 ) -> PortfolioItem:
     item = get_item_for_user(db, user, item_id)
     payload = data.model_dump(exclude_unset=True)
+    if "category" in payload and payload["category"] and not is_pro(user.plan):
+        raise AppError(
+            "Categorias de portfólio requerem plano Pro",
+            "portfolio_category_pro_only",
+            status_code=403,
+        )
     for key, value in payload.items():
         setattr(item, key, value)
     db.commit()

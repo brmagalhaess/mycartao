@@ -5,10 +5,10 @@ from urllib.parse import urlparse
 
 from app.core.errors import AppError
 from app.models.user import User
+from app.services.entitlements import is_pro
 
 ALLOWED_ICONS = frozenset({"link", "globe", "calendar", "shop", "video", "music"})
 MAX_LINKS = 20
-PRO_PLANS = frozenset({"pro", "admin"})
 MAX_TITLE_LEN = 60
 
 
@@ -111,7 +111,7 @@ def gate_custom_links(user: User, fields: Optional[Dict[str, Any]]) -> Optional[
     links = fields.get("custom_links")
     if not links:
         return fields
-    if user.plan not in PRO_PLANS:
+    if not is_pro(user.plan):
         raise AppError(
             "Links personalizados disponíveis apenas no plano Pro",
             "custom_links_pro_only",
