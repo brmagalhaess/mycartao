@@ -1,32 +1,84 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/components/I18nProvider";
 
-type BillingStatus = {
-  environment: string;
-  stripe_mode: string;
+type BillingStatus = { environment: string; stripe_mode: string };
+
+type Overview = {
+  plan: string;
+  status: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  has_subscription: boolean;
 };
+
+type Invoice = {
+  id: string;
+  number: string | null;
+  status: string | null;
+  amount_paid: number | null;
+  currency: string | null;
+  created: string | null;
+  hosted_invoice_url: string | null;
+};
+
+function parseDetail(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const detail = (data as { detail?: unknown }).detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => (d as { msg?: string }).msg ?? JSON.stringify(d))
+      .join("; ");
+  }
+  if (detail && typeof detail === "object") {
+    return (detail as { message?: string }).message ?? JSON.stringify(detail);
+  }
+  return null;
+}
 
 export default function BillingPage() {
   const router = useRouter();
-  const [plan, setPlan] = useState<string | null>(null);
+  const { dict, locale } = useI18n();
+  const t = dict.billing;
+
   const [status, setStatus] = useState<BillingStatus | null>(null);
+  const [overview, setOverview] = useState<Overview | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[] | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const intlLocale = locale === "pt" ? "pt-BR" : locale;
+
+  const loadAll = useCallback(async () => {
+    const [ovRes, invRes] = await Promise.all([
+      apiFetch("/api/v1/billing/subscription"),
+      apiFetch("/api/v1/billing/history"),
+    ]);
+    if (ovRes.status === 401) {
+      router.replace("/login");
+      return;
+    }
+    if (ovRes.ok) setOverview((await ovRes.json()) as Overview);
+    if (invRes.ok) {
+      const data = (await invRes.json()) as { invoices: Invoice[] };
+      setInvoices(data.invoices);
+    } else {
+      setInvoices([]);
+    }
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+    async function boot() {
       const statusRes = await apiFetch("/api/v1/billing/status");
       if (statusRes.ok && !cancelled) {
         setStatus((await statusRes.json()) as BillingStatus);
       }
-
-      // Back from Stripe Checkout: reconcile plan before reading it,
-      // so the page reflects Pro even if the webhook was missed.
+      // Back from Stripe Checkout: reconcile before reading the plan.
       const fromCheckout =
         typeof window !== "undefined" &&
         new URLSearchParams(window.location.search).get("success") === "1";
@@ -35,125 +87,97 @@ export default function BillingPage() {
           () => null,
         );
       }
-
-      const res = await apiFetch("/api/v1/auth/whoami");
-      if (res.status === 401) {
-        router.replace("/login");
-        return;
-      }
-      if (!res.ok) {
-        if (!cancelled) setError("Não foi possível carregar o plano.");
-        return;
-      }
-      const user = (await res.json()) as { plan: string };
-      if (!cancelled) setPlan(user.plan);
+      if (!cancelled) await loadAll();
     }
-    load().catch(() => {
-      if (!cancelled) setError("Falha de rede.");
+    boot().catch(() => {
+      if (!cancelled) setError(t.genericError);
     });
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [loadAll, t.genericError]);
 
-  async function syncPlan() {
-    setLoading(true);
+  async function action(
+    path: string,
+    opts?: { confirm?: string; testModeMessage?: boolean },
+  ) {
+    if (opts?.confirm && !window.confirm(opts.confirm)) return;
+    setBusy(true);
     setError("");
     try {
-      const res = await apiFetch("/api/v1/billing/sync", { method: "POST" });
+      const res = await apiFetch(path, { method: "POST" });
       if (res.status === 401) {
         router.replace("/login");
         return;
       }
+      const data = (await res.json().catch(() => null)) as unknown;
       if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as {
-          detail?: string;
-        } | null;
-        setError(data?.detail ?? "Não foi possível sincronizar a assinatura.");
-        return;
-      }
-      const data = (await res.json()) as { plan: string };
-      setPlan(data.plan);
-      if (data.plan === "free") {
+        const code = (data as { code?: string } | null)?.code;
         setError(
-          "Nenhuma assinatura ativa encontrada na Stripe para sua conta.",
-        );
-      }
-    } catch {
-      setError("Falha de rede ao sincronizar.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function subscribe() {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await apiFetch("/api/v1/billing/checkout", {
-        method: "POST",
-      });
-      if (res.status === 401) {
-        router.replace("/login");
-        return;
-      }
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as {
-          detail?: string | { msg?: string }[] | { message?: string };
-          code?: string;
-        } | null;
-        const detail =
-          typeof data?.detail === "string"
-            ? data.detail
-            : Array.isArray(data?.detail)
-              ? data.detail.map((d) => d.msg ?? JSON.stringify(d)).join("; ")
-              : typeof data?.detail === "object" && data.detail
-                ? (data.detail.message ?? JSON.stringify(data.detail))
-                : null;
-        setError(
-          data?.code === "stripe_test_mode"
-            ? "Pagamentos ainda em modo teste. Configure a Stripe live no servidor."
-            : (detail ??
-              `Não foi possível iniciar o checkout (HTTP ${res.status}).`),
+          code === "stripe_test_mode"
+            ? t.testBanner
+            : (parseDetail(data) ?? t.genericError),
         );
         return;
       }
-      const data = (await res.json()) as { url: string };
-      if (data.url) {
-        window.location.href = data.url;
-        return;
+      if (path === "/api/v1/billing/checkout") {
+        const url = (data as { url?: string } | null)?.url;
+        if (url) {
+          window.location.href = url;
+          return;
+        }
       }
-      setError("Checkout sem URL de redirecionamento.");
+      if (
+        path === "/api/v1/billing/sync" &&
+        (data as { plan?: string } | null)?.plan === "free"
+      ) {
+        setError(t.syncNoSub);
+      }
+      await loadAll();
     } catch {
-      setError("Falha de rede no checkout.");
+      setError(t.genericError);
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
-  const isPro = plan === "pro" || plan === "admin";
+  const plan = overview?.plan ?? null;
+  const isAdmin = plan === "admin";
+  const isPro = plan === "pro" || isAdmin;
   const stripeTest = status?.stripe_mode === "test";
+  const periodEnd = overview?.current_period_end
+    ? new Date(overview.current_period_end).toLocaleDateString(intlLocale, {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
+  function money(inv: Invoice) {
+    if (inv.amount_paid == null) return "—";
+    try {
+      return new Intl.NumberFormat(intlLocale, {
+        style: "currency",
+        currency: (inv.currency ?? "brl").toUpperCase(),
+      }).format(inv.amount_paid / 100);
+    } catch {
+      return `${(inv.amount_paid / 100).toFixed(2)}`;
+    }
+  }
 
   return (
     <main>
       <h1 className="animate-rise font-display text-3xl font-semibold sm:text-4xl">
-        Cobrança
+        {t.title}
       </h1>
-      <p className="animate-rise-delay mt-2 text-ink-soft">
-        Gerencie seu plano Free ou Pro.
-      </p>
+      <p className="animate-rise-delay mt-2 text-ink-soft">{t.lead}</p>
 
       {stripeTest ? (
         <p
           role="status"
           className="mt-6 rounded-md border border-amber-700/30 bg-amber-50 px-4 py-3 text-sm text-amber-950"
         >
-          A Stripe ainda está com chave de <strong>teste</strong> (
-          <code className="text-xs">sk_test_…</code>
-          ). O produto Pro foi criado no modo Teste no setup. Para cobrar de
-          verdade, no Dashboard Stripe (toggle <strong>Live</strong>) copie{" "}
-          <code className="text-xs">sk_live_…</code>, crie o preço Pro e o
-          webhook, e cole no Dokploy.
+          {t.testBanner}
         </p>
       ) : null}
 
@@ -163,61 +187,148 @@ export default function BillingPage() {
         </p>
       ) : null}
 
-      {plan === null && !error ? (
-        <p className="mt-10 text-sm text-ink-soft">Carregando…</p>
+      {overview === null && !error ? (
+        <p className="mt-10 text-sm text-ink-soft">{dict.common.loading}</p>
       ) : null}
 
-      {plan ? (
-        <div className="mt-10 max-w-lg">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-soft/70">
-            Plano atual
-          </p>
-          <p className="mt-1 font-display text-3xl font-semibold capitalize">
-            {plan}
-          </p>
+      {overview ? (
+        <section className="mt-8 rounded-2xl border border-line bg-paper/70 p-6 sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-soft/70">
+                {t.currentPlan}
+              </p>
+              <p className="mt-1 font-display text-3xl font-semibold capitalize">
+                {plan}
+              </p>
+            </div>
+            {overview.status ? (
+              <span className="rounded-full bg-teal/10 px-3 py-1 text-sm font-medium text-teal-deep">
+                {t.statuses[overview.status] ?? overview.status}
+              </span>
+            ) : null}
+          </div>
 
-          {isPro ? (
-            <p className="mt-6 text-ink-soft">
-              Você já tem acesso Pro
-              {plan === "admin" ? " (admin)" : ""}. Confira{" "}
-              <Link href="/pricing" className="text-teal hover:underline">
-                os benefícios
-              </Link>
-              .
-            </p>
+          {isAdmin ? (
+            <p className="mt-5 text-sm text-ink-soft">{t.adminNote}</p>
+          ) : isPro ? (
+            <>
+              <p className="mt-5 text-sm text-ink-soft">{t.proActive}</p>
+              {periodEnd ? (
+                <p className="mt-2 text-sm text-ink-soft">
+                  {overview.cancel_at_period_end ? t.endsOn : t.renewsOn}{" "}
+                  <strong className="text-ink">{periodEnd}</strong>
+                </p>
+              ) : null}
+              {overview.cancel_at_period_end ? (
+                <p className="mt-3 rounded-md border border-amber-700/30 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                  {t.cancelScheduled}
+                </p>
+              ) : null}
+              {overview.has_subscription ? (
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                  {overview.cancel_at_period_end ? (
+                    <button
+                      type="button"
+                      onClick={() => action("/api/v1/billing/resume")}
+                      disabled={busy}
+                      className="inline-flex justify-center rounded-md bg-teal px-6 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
+                    >
+                      {busy ? t.wait : t.resume}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        action("/api/v1/billing/cancel", {
+                          confirm: t.cancelConfirm,
+                        })
+                      }
+                      disabled={busy}
+                      className="inline-flex justify-center rounded-md border border-red-800/30 px-6 py-3 text-sm font-medium text-red-800 transition hover:bg-red-50 disabled:opacity-60"
+                    >
+                      {busy ? t.wait : t.cancel}
+                    </button>
+                  )}
+                </div>
+              ) : null}
+            </>
           ) : (
             <>
-              <p className="mt-6 text-ink-soft">
-                Desbloqueie slug, cartões ilimitados, analytics 90 dias e sem
-                watermark.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <p className="mt-5 text-sm text-ink-soft">{t.proPitch}</p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   type="button"
-                  onClick={subscribe}
-                  disabled={loading || stripeTest}
-                  className="inline-flex rounded-md bg-teal px-6 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
+                  onClick={() => action("/api/v1/billing/checkout")}
+                  disabled={busy || stripeTest}
+                  className="inline-flex justify-center rounded-md bg-teal px-6 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
                 >
-                  {loading ? "Aguarde…" : "Assinar Pro"}
+                  {busy ? t.wait : t.subscribe}
                 </button>
                 <button
                   type="button"
-                  onClick={syncPlan}
-                  disabled={loading}
-                  className="inline-flex rounded-md border border-line px-6 py-3 text-sm font-medium text-ink transition hover:border-teal/40 disabled:opacity-60"
+                  onClick={() => action("/api/v1/billing/sync")}
+                  disabled={busy}
+                  className="inline-flex justify-center rounded-md border border-line px-6 py-3 text-sm font-medium text-ink transition hover:border-teal/40 disabled:opacity-60"
                 >
-                  Já paguei — atualizar
+                  {t.alreadyPaid}
                 </button>
               </div>
               {stripeTest ? (
-                <p className="mt-3 text-xs text-ink-soft">
-                  Botão desativado enquanto a Stripe estiver em teste no
-                  servidor de produção.
-                </p>
+                <p className="mt-3 text-xs text-ink-soft">{t.testButtonNote}</p>
               ) : null}
             </>
           )}
-        </div>
+        </section>
+      ) : null}
+
+      {invoices !== null ? (
+        <section className="mt-8">
+          <h2 className="font-display text-xl font-semibold">{t.history}</h2>
+          {invoices.length === 0 ? (
+            <p className="mt-3 text-sm text-ink-soft">{t.noInvoices}</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-paper/70">
+              <table className="w-full min-w-[520px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-soft/70">
+                    <th className="px-5 py-3 font-medium">{t.date}</th>
+                    <th className="px-5 py-3 font-medium">{t.amount}</th>
+                    <th className="px-5 py-3 font-medium">{t.status}</th>
+                    <th className="px-5 py-3 font-medium" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((inv) => (
+                    <tr key={inv.id} className="border-b border-line/60 last:border-0">
+                      <td className="px-5 py-3">
+                        {inv.created
+                          ? new Date(inv.created).toLocaleDateString(intlLocale)
+                          : "—"}
+                      </td>
+                      <td className="px-5 py-3">{money(inv)}</td>
+                      <td className="px-5 py-3 capitalize">
+                        {t.statuses[inv.status ?? ""] ?? inv.status ?? "—"}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        {inv.hosted_invoice_url ? (
+                          <a
+                            href={inv.hosted_invoice_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-medium text-teal hover:underline"
+                          >
+                            {t.view}
+                          </a>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       ) : null}
     </main>
   );

@@ -41,6 +41,7 @@ services:
     build: ./backend
     environment:
       APP_ENV: ${APP_ENV:-production}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-bruno.magalhaess@gmail.com}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://mycartao:mycartao@db:5432/mycartao}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-long-secret}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}

@@ -134,6 +134,118 @@ def create_checkout_session(
     return url
 
 
+def _current_subscription_row(db: Session, user: User) -> Subscription | None:
+    return (
+        db.query(Subscription)
+        .filter(Subscription.user_id == user.id)
+        .order_by(Subscription.current_period_end.desc().nullslast())
+        .first()
+    )
+
+
+def get_subscription_overview(db: Session, user: User) -> dict:
+    """Current subscription state for the billing center UI."""
+    row = _current_subscription_row(db, user)
+    overview: dict = {
+        "plan": user.plan,
+        "status": row.status if row else None,
+        "current_period_end": (
+            row.current_period_end.isoformat()
+            if row and row.current_period_end
+            else None
+        ),
+        "cancel_at_period_end": False,
+        "has_subscription": row is not None,
+    }
+    if row is None or not settings.stripe_secret_key:
+        return overview
+    try:
+        stripe.api_key = settings.stripe_secret_key
+        live = _obj(stripe.Subscription.retrieve(row.stripe_subscription_id))
+        overview["status"] = str(live.get("status") or overview["status"])
+        overview["cancel_at_period_end"] = bool(live.get("cancel_at_period_end"))
+        period_end = _period_end(live.get("current_period_end"))
+        if period_end:
+            overview["current_period_end"] = period_end.isoformat()
+    except stripe.StripeError:
+        # DB snapshot is good enough when Stripe is unreachable.
+        pass
+    return overview
+
+
+def cancel_subscription(db: Session, user: User) -> dict:
+    """Cancel at period end (Pro stays active until the paid period ends)."""
+    _require_stripe_api()
+    row = _current_subscription_row(db, user)
+    if row is None:
+        raise AppError(
+            "Nenhuma assinatura ativa para cancelar",
+            "no_subscription",
+            status_code=404,
+        )
+    try:
+        stripe.Subscription.modify(
+            row.stripe_subscription_id, cancel_at_period_end=True
+        )
+    except stripe.StripeError as exc:
+        raise AppError(
+            _stripe_error_message(exc), "cancel_failed", status_code=502
+        ) from exc
+    return get_subscription_overview(db, user)
+
+
+def resume_subscription(db: Session, user: User) -> dict:
+    """Undo a scheduled cancellation before the period ends."""
+    _require_stripe_api()
+    row = _current_subscription_row(db, user)
+    if row is None:
+        raise AppError(
+            "Nenhuma assinatura para retomar",
+            "no_subscription",
+            status_code=404,
+        )
+    try:
+        stripe.Subscription.modify(
+            row.stripe_subscription_id, cancel_at_period_end=False
+        )
+    except stripe.StripeError as exc:
+        raise AppError(
+            _stripe_error_message(exc), "resume_failed", status_code=502
+        ) from exc
+    return get_subscription_overview(db, user)
+
+
+def list_invoices(user: User, limit: int = 12) -> list[dict]:
+    """Billing history straight from Stripe (no local invoice storage)."""
+    if not user.stripe_customer_id or not settings.stripe_secret_key:
+        return []
+    stripe.api_key = settings.stripe_secret_key
+    try:
+        result = stripe.Invoice.list(customer=user.stripe_customer_id, limit=limit)
+    except stripe.StripeError as exc:
+        raise AppError(
+            _stripe_error_message(exc), "invoices_failed", status_code=502
+        ) from exc
+    data = result.get("data", []) if isinstance(result, dict) else list(result.data)
+    invoices = []
+    for raw in data:
+        inv = _obj(raw)
+        created = _period_end(inv.get("created"))
+        invoices.append(
+            {
+                "id": inv.get("id"),
+                "number": inv.get("number"),
+                "status": inv.get("status"),
+                "amount_paid": inv.get("amount_paid"),
+                "currency": inv.get("currency"),
+                "created": created.isoformat() if created else None,
+                "hosted_invoice_url": inv.get("hosted_invoice_url"),
+                "invoice_pdf": inv.get("invoice_pdf"),
+            }
+        )
+    return invoices
+
+
 def sync_subscription_from_stripe(db: Session, user: User) -> str:
     """Reconcile the user's plan straight from Stripe.
 

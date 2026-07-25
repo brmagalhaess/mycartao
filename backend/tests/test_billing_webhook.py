@@ -331,6 +331,107 @@ def test_sync_canceled_subscription_downgrades(
     assert r.json()["plan"] == "free"
 
 
+def _set_subscription(email: str, sub_id: str, status: str = "active"):
+    from app.db import SessionLocal
+    from app.models.billing import Subscription
+    from app.models.user import User
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).one()
+        user.stripe_customer_id = "cus_x"
+        db.add(
+            Subscription(
+                user_id=user.id,
+                stripe_subscription_id=sub_id,
+                status=status,
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
+@patch("app.services.stripe_billing.stripe.Subscription.retrieve")
+def test_subscription_overview(mock_retrieve, auth_client_pro, monkeypatch):
+    from app.services import stripe_billing as sb
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    _set_subscription("pro@example.com", "sub_ov1")
+    mock_retrieve.return_value = {
+        "status": "active",
+        "cancel_at_period_end": False,
+        "current_period_end": 1893456000,
+    }
+
+    r = auth_client_pro.get("/api/v1/billing/subscription")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["plan"] == "pro"
+    assert body["status"] == "active"
+    assert body["cancel_at_period_end"] is False
+    assert body["has_subscription"] is True
+
+
+@patch("app.services.stripe_billing.stripe.Subscription.retrieve")
+@patch("app.services.stripe_billing.stripe.Subscription.modify")
+def test_cancel_subscription_at_period_end(
+    mock_modify, mock_retrieve, auth_client_pro, monkeypatch
+):
+    from app.services import stripe_billing as sb
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    _set_subscription("pro@example.com", "sub_cx1")
+    mock_retrieve.return_value = {
+        "status": "active",
+        "cancel_at_period_end": True,
+        "current_period_end": 1893456000,
+    }
+
+    r = auth_client_pro.post("/api/v1/billing/cancel")
+    assert r.status_code == 200
+    assert r.json()["cancel_at_period_end"] is True
+    mock_modify.assert_called_once_with("sub_cx1", cancel_at_period_end=True)
+
+
+def test_cancel_without_subscription_404(auth_client_free, monkeypatch):
+    from app.services import stripe_billing as sb
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    r = auth_client_free.post("/api/v1/billing/cancel")
+    assert r.status_code == 404
+    assert r.json()["code"] == "no_subscription"
+
+
+@patch("app.services.stripe_billing.stripe.Invoice.list")
+def test_billing_history_lists_invoices(mock_list, auth_client_pro, monkeypatch):
+    from app.services import stripe_billing as sb
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    _set_subscription("pro@example.com", "sub_hist1")
+    mock_list.return_value = {
+        "data": [
+            {
+                "id": "in_1",
+                "number": "0001",
+                "status": "paid",
+                "amount_paid": 1990,
+                "currency": "brl",
+                "created": 1784943485,
+                "hosted_invoice_url": "https://stripe.test/inv",
+                "invoice_pdf": "https://stripe.test/inv.pdf",
+            }
+        ]
+    }
+
+    r = auth_client_pro.get("/api/v1/billing/history")
+    assert r.status_code == 200
+    invoices = r.json()["invoices"]
+    assert len(invoices) == 1
+    assert invoices[0]["number"] == "0001"
+    assert invoices[0]["amount_paid"] == 1990
+
+
 @patch("app.services.stripe_billing.stripe.checkout.Session.create")
 def test_checkout_surfaces_stripe_error(mock_session_create, auth_client_free, monkeypatch):
     import stripe

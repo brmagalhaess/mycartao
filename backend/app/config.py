@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     # production | development | empty = auto (https PUBLIC_APP_URL → production)
     app_env: str = ""
+    # Comma-separated emails promoted to plan=admin on login
+    admin_emails: str = ""
     public_app_url: str = "http://localhost:3000"
     cors_origins: str = "http://localhost:3000"
     jwt_secret: str = "change-me"
@@ -30,6 +32,11 @@ class Settings(BaseSettings):
         if env in {"development", "dev", "local", "test"}:
             return False
         return self.public_app_url.lower().startswith("https://")
+
+    def admin_email_set(self) -> frozenset[str]:
+        return frozenset(
+            e.strip().lower() for e in self.admin_emails.split(",") if e.strip()
+        )
 
     def stripe_mode(self) -> str:
         key = (self.stripe_secret_key or "").strip()

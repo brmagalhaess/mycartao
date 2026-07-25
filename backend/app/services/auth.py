@@ -72,6 +72,10 @@ def verify_magic_link(db: Session, raw_token: str) -> tuple[User, str]:
         db.add(user)
         db.flush()
 
+    # Emails in ADMIN_EMAILS always land (and stay) as admin.
+    if user.email.lower() in settings.admin_email_set() and user.plan != "admin":
+        user.plan = "admin"
+
     profile = db.query(Profile).filter(Profile.user_id == user.id).one_or_none()
     if profile is None:
         db.add(Profile(user_id=user.id))

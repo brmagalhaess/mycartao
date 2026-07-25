@@ -47,6 +47,35 @@ def create_checkout(
     return {"url": url}
 
 
+@router.get("/subscription")
+def subscription_overview(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return stripe_billing.get_subscription_overview(db, user)
+
+
+@router.post("/cancel")
+def cancel_subscription(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return stripe_billing.cancel_subscription(db, user)
+
+
+@router.post("/resume")
+def resume_subscription(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return stripe_billing.resume_subscription(db, user)
+
+
+@router.get("/history")
+def billing_history(user: User = Depends(get_current_user)):
+    return {"invoices": stripe_billing.list_invoices(user)}
+
+
 @router.post("/sync")
 def sync_billing(
     user: User = Depends(get_current_user),
