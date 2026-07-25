@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import {
+  PUBLIC_TOOLS,
+  publicToolUrl,
+  type PublicToolId,
+} from "@/lib/public-tools";
 
 type Props = {
   label: string;
@@ -67,6 +72,12 @@ type ShareBlockProps = {
   origin: string;
 };
 
+function pathKey(path: string): string {
+  const clean = path.replace(/^\//, "");
+  const parts = clean.split("/");
+  return parts[parts.length - 1] || clean;
+}
+
 export default function ShareLinksBlock({
   kind,
   commonPath,
@@ -75,30 +86,52 @@ export default function ShareLinksBlock({
   origin,
 }: ShareBlockProps) {
   const title = kind === "card" ? "Compartilhar" : "Compartilhar portfólio";
-  const commonUrl = `${origin}${commonPath}`;
-  const personalizedUrl =
-    personalizedPath && origin ? `${origin}${personalizedPath}` : "";
+  const publicKey = personalizedPath
+    ? pathKey(personalizedPath)
+    : pathKey(commonPath);
+  const defaultTool: PublicToolId = kind === "portfolio" ? "portfolio" : "card";
+  const [tool, setTool] = useState<PublicToolId>(defaultTool);
 
-  // One link only: prefer personalized slug when available.
-  const primaryUrl = personalizedUrl || commonUrl;
-  const isPersonalized = Boolean(personalizedUrl);
+  const primaryUrl = origin && publicKey ? publicToolUrl(origin, publicKey, tool) : "";
+  const isPersonalized = Boolean(personalizedPath);
 
   return (
     <section className="space-y-4">
       <div>
         <h2 className="section-title">{title}</h2>
         <p className="mt-1 text-sm text-ink-soft">
-          {isPersonalized
-            ? "Seu link personalizado — copie e compartilhe."
-            : "Seu link público. Com Pro, você pode usar um nome personalizado."}
+          Um link só. A ferramenta vai no parâmetro{" "}
+          <code className="text-xs">?tool=</code>.
         </p>
       </div>
 
-      <CopyableLink
-        label={isPersonalized ? "Seu link" : "Link do cartão"}
-        url={primaryUrl}
-        hint={isPersonalized ? "Slug Pro" : "Link comum"}
-      />
+      <div className="flex flex-wrap gap-2">
+        {PUBLIC_TOOLS.map((item) => {
+          const active = tool === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTool(item.id)}
+              className={
+                active
+                  ? "rounded-full bg-teal px-3 py-1.5 text-sm font-semibold text-paper"
+                  : "rounded-full border border-line bg-paper/70 px-3 py-1.5 text-sm font-medium text-ink-soft transition hover:border-teal/40 hover:text-ink"
+              }
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {primaryUrl ? (
+        <CopyableLink
+          label="Seu link"
+          url={primaryUrl}
+          hint={isPersonalized ? "Slug Pro" : "Link público"}
+        />
+      ) : null}
 
       {!isPersonalized ? (
         <p className="text-sm text-ink-soft">

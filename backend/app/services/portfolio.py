@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
+from app.models.card import Card
 from app.models.portfolio import PortfolioItem
 from app.models.profile import Profile
 from app.models.user import User
@@ -113,6 +114,11 @@ def _resolve_profile(db: Session, slug_or_id: str) -> Optional[Profile]:
     profile = db.query(Profile).filter(Profile.id == uid).one_or_none()
     if profile is not None:
         return profile
+
+    # Same public key as /c/{cardId} — one link for all tools.
+    card = db.query(Card).filter(Card.id == uid).one_or_none()
+    if card is not None:
+        return db.query(Profile).filter(Profile.id == card.profile_id).one_or_none()
 
     item = db.query(PortfolioItem).filter(PortfolioItem.id == uid).one_or_none()
     if item is None:

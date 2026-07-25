@@ -78,6 +78,30 @@ def test_public_portfolio_by_slug(auth_client_pro):
     assert any(x["title"] == "Projeto A" for x in body)
 
 
+def test_public_portfolio_by_card_id(auth_client_free):
+    """Same public key as /c/{cardId} must resolve portfolio via ?tool=portfolio."""
+    cards = auth_client_free.get("/api/v1/cards")
+    assert cards.status_code == 200
+    card_list = cards.json()
+    if not card_list:
+        created_card = auth_client_free.post(
+            "/api/v1/cards", json={"title": "Primary"}
+        )
+        assert created_card.status_code == 201
+        card_id = created_card.json()["id"]
+    else:
+        card_id = card_list[0]["id"]
+
+    item = auth_client_free.post(
+        "/api/v1/portfolio",
+        json=_item("Via card id", typ="project"),
+    ).json()
+
+    r = auth_client_free.get(f"/api/v1/public/portfolio/{card_id}")
+    assert r.status_code == 200
+    assert any(x["id"] == item["id"] for x in r.json())
+
+
 def test_public_portfolio_by_profile_id(auth_client_free):
     profile = auth_client_free.get("/api/v1/me").json()
     created = auth_client_free.post(

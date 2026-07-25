@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { CopyableLink } from "@/components/ShareLinksBlock";
 import { FREE_THEMES, PRO_THEMES, type CardTheme } from "@/lib/card-theme";
+import {
+  PUBLIC_TOOLS,
+  publicToolUrl,
+  type PublicToolId,
+} from "@/lib/public-tools";
 
 type Profile = {
   id: string;
@@ -25,10 +30,10 @@ type Card = {
 export default function SettingsPage() {
   const router = useRouter();
   const [plan, setPlan] = useState("free");
-  const [profileId, setProfileId] = useState("");
   const [primaryCardId, setPrimaryCardId] = useState<string | null>(null);
   const [slug, setSlug] = useState("");
   const [usePersonalized, setUsePersonalized] = useState(false);
+  const [tool, setTool] = useState<PublicToolId>("card");
   const [theme, setTheme] = useState<CardTheme>("minimal");
   const [brandColor, setBrandColor] = useState("#0f766e");
   const [displayName, setDisplayName] = useState("");
@@ -77,7 +82,6 @@ export default function SettingsPage() {
       }
 
       if (cancelled) return;
-      setProfileId(profile.id);
       setPrimaryCardId(cardId);
       setSlug(profile.slug ?? "");
       setUsePersonalized(Boolean(profile.slug));
@@ -101,12 +105,8 @@ export default function SettingsPage() {
     return primaryCardId;
   }, [isPro, usePersonalized, slug, primaryCardId]);
 
-  const cardUrl =
-    origin && publicKey ? `${origin}/c/${publicKey}` : "";
-  const portfolioUrl =
-    origin && publicKey
-      ? `${origin}/p/${isPro && usePersonalized && slug.trim() ? slug.trim().toLowerCase() : profileId}`
-      : "";
+  const publicUrl =
+    origin && publicKey ? publicToolUrl(origin, publicKey, tool) : "";
 
   async function onSave(event: FormEvent) {
     event.preventDefault();
@@ -219,11 +219,11 @@ export default function SettingsPage() {
           Seu link
         </p>
         <h2 className="mt-2 font-display text-xl font-semibold">
-          Um único endereço público
+          Um endereço, várias ferramentas
         </h2>
         <p className="mt-2 text-sm text-ink-soft">
-          Free usa o ID do cartão. Pro pode personalizar com um nome (slug) —
-          cartão e portfólio compartilham o mesmo identificador.
+          Um único link público. Escolha a ferramenta abaixo — ela entra como
+          parâmetro <code className="text-xs">?tool=</code> na mesma URL.
         </p>
 
         {!primaryCardId ? (
@@ -236,23 +236,43 @@ export default function SettingsPage() {
           </p>
         ) : (
           <div className="mt-6 space-y-5">
-            <CopyableLink
-              label={
-                isPro && usePersonalized && slug.trim()
-                  ? "Link personalizado (Pro)"
-                  : "Link comum (grátis)"
-              }
-              url={cardUrl}
-              hint={
-                isPro && usePersonalized && slug.trim()
-                  ? "Cartão público"
-                  : "Funciona em todos os planos"
-              }
-            />
-            {portfolioUrl ? (
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft/70">
+                Ferramenta
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {PUBLIC_TOOLS.map((item) => {
+                  const active = tool === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setTool(item.id)}
+                      className={
+                        active
+                          ? "rounded-full bg-teal px-3.5 py-1.5 text-sm font-semibold text-paper"
+                          : "rounded-full border border-line bg-paper/70 px-3.5 py-1.5 text-sm font-medium text-ink-soft transition hover:border-teal/40 hover:text-ink"
+                      }
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-xs text-ink-soft">
+                {PUBLIC_TOOLS.find((t) => t.id === tool)?.hint}
+              </p>
+            </div>
+
+            {publicUrl ? (
               <CopyableLink
-                label="Portfólio (mesmo identificador)"
-                url={portfolioUrl}
+                label="Seu link"
+                url={publicUrl}
+                hint={
+                  isPro && usePersonalized && slug.trim()
+                    ? "Slug Pro"
+                    : "Link público"
+                }
               />
             ) : null}
 

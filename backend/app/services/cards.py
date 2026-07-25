@@ -102,6 +102,16 @@ def get_public_card(db: Session, slug_or_id: str) -> Card:
 
     profile = db.query(Profile).filter(Profile.slug == slug_or_id).one_or_none()
     if profile is None:
+        # Allow the same public key as portfolio/smart (profile UUID).
+        try:
+            profile = (
+                db.query(Profile)
+                .filter(Profile.id == UUID(slug_or_id))
+                .one_or_none()
+            )
+        except ValueError:
+            profile = None
+    if profile is None:
         raise AppError("Cartão não encontrado", "not_found", status_code=404)
 
     card = (

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch, toMediaSrc } from "@/lib/api";
 import { parseCustomLinks, type CustomLink } from "@/lib/custom-links";
 import { themeStyleVars, type CardTheme } from "@/lib/card-theme";
+import { isPublicToolId } from "@/lib/public-tools";
 
 type PublicCard = {
   id: string;
@@ -106,11 +107,36 @@ function buildActionLinks(
 
 export default function PublicCardPage() {
   const params = useParams<{ slugOrId: string }>();
+  const router = useRouter();
   const slugOrId = params.slugOrId;
   const [card, setCard] = useState<PublicCard | null>(null);
   const [error, setError] = useState("");
+  const [routing, setRouting] = useState(true);
+
+  // One public link: /c/{key}?tool=portfolio|presence|smart
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get("tool");
+    if (!raw || raw === "card" || !isPublicToolId(raw)) {
+      setRouting(false);
+      return;
+    }
+    if (raw === "portfolio") {
+      router.replace(`/p/${slugOrId}`);
+      return;
+    }
+    if (raw === "presence") {
+      router.replace(`/c/${slugOrId}/presence`);
+      return;
+    }
+    if (raw === "smart") {
+      router.replace(`/go/${slugOrId}`);
+      return;
+    }
+    setRouting(false);
+  }, [slugOrId, router]);
 
   useEffect(() => {
+    if (routing) return;
     let cancelled = false;
     async function load() {
       const res = await apiFetch(`/api/v1/public/cards/${slugOrId}`);
@@ -127,7 +153,7 @@ export default function PublicCardPage() {
     return () => {
       cancelled = true;
     };
-  }, [slugOrId]);
+  }, [slugOrId, routing]);
 
   const theme = (card?.theme || "minimal") as CardTheme;
   const style = useMemo(
@@ -184,7 +210,7 @@ export default function PublicCardPage() {
             </p>
           ) : null}
 
-          {!card && !error ? (
+          {(routing || (!card && !error)) ? (
             <p className="animate-fade text-sm opacity-70">Carregando…</p>
           ) : null}
 

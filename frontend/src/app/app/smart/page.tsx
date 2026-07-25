@@ -37,7 +37,8 @@ export default function SmartPage() {
   const goUrl = useMemo(() => {
     if (typeof window === "undefined" || !profile) return "";
     const key = profile.slug || profile.id;
-    return `${window.location.origin}/go/${key}`;
+    // Same public base link; tool selected via query param.
+    return `${window.location.origin}/c/${key}?tool=smart`;
   }, [profile]);
 
   async function loadProData() {
