@@ -4,18 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch, toMediaSrc } from "@/lib/api";
-import { parseCustomLinks } from "@/lib/custom-links";
+import { parseCustomLinks, type CustomLink } from "@/lib/custom-links";
 import { themeStyleVars, type CardTheme } from "@/lib/card-theme";
-
-const FIELD_LABELS: Record<string, string> = {
-  phone: "Telefone",
-  whatsapp: "WhatsApp",
-  email: "E-mail",
-  company: "Empresa",
-  website: "Site",
-  linkedin: "LinkedIn",
-  instagram: "Instagram",
-};
 
 type PublicCard = {
   id: string;
@@ -30,9 +20,88 @@ type PublicCard = {
   show_mycartao_branding?: boolean;
 };
 
+type ActionLink = {
+  id: string;
+  title: string;
+  href: string;
+  external: boolean;
+};
+
 function fieldStr(fields: Record<string, unknown>, key: string): string {
   const v = fields[key];
-  return typeof v === "string" ? v : "";
+  return typeof v === "string" ? v.trim() : "";
+}
+
+function normalizeUrl(raw: string): string {
+  const t = raw.trim();
+  if (!t) return "";
+  if (/^(https?:|mailto:|tel:)/i.test(t)) return t;
+  if (t.includes("@") && !t.includes(" ")) return `mailto:${t}`;
+  if (/^[\d+()\s.-]{6,}$/.test(t)) return `tel:${t.replace(/[^\d+]/g, "")}`;
+  if (t.startsWith("wa.me/") || t.startsWith("api.whatsapp.com/")) {
+    return `https://${t}`;
+  }
+  return `https://${t.replace(/^\/\//, "")}`;
+}
+
+function hostKey(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return url.toLowerCase();
+  }
+}
+
+/** Classic contact fields + custom links → one button each (no duplicates). */
+function buildActionLinks(
+  fields: Record<string, unknown>,
+  custom: CustomLink[],
+): ActionLink[] {
+  const actions: ActionLink[] = [];
+  const seen = new Set<string>();
+
+  function push(id: string, title: string, href: string, external = true) {
+    const key = href.toLowerCase();
+    const host = hostKey(href);
+    if (seen.has(key) || (host && seen.has(`h:${host}`))) return;
+    seen.add(key);
+    if (host) seen.add(`h:${host}`);
+    actions.push({ id, title, href, external });
+  }
+
+  const phone = fieldStr(fields, "phone");
+  const whatsapp = fieldStr(fields, "whatsapp");
+  const email = fieldStr(fields, "email");
+  const website = fieldStr(fields, "website");
+  const linkedin = fieldStr(fields, "linkedin");
+  const instagram = fieldStr(fields, "instagram");
+
+  if (whatsapp) {
+    const digits = whatsapp.replace(/\D/g, "");
+    push(
+      "whatsapp",
+      "WhatsApp",
+      digits ? `https://wa.me/${digits}` : normalizeUrl(whatsapp),
+    );
+  } else if (phone) {
+    push("phone", "Telefone", normalizeUrl(phone));
+  }
+  if (email) push("email", "E-mail", normalizeUrl(email));
+  if (website) push("website", "Site", normalizeUrl(website));
+  if (linkedin) push("linkedin", "LinkedIn", normalizeUrl(linkedin));
+  if (instagram) {
+    const handle = instagram.replace(/^@/, "");
+    const href = handle.includes("instagram.com")
+      ? normalizeUrl(handle)
+      : `https://instagram.com/${handle}`;
+    push("instagram", "Instagram", href);
+  }
+
+  for (const link of custom) {
+    push(link.id, link.title, normalizeUrl(link.url));
+  }
+
+  return actions;
 }
 
 export default function PublicCardPage() {
@@ -68,12 +137,8 @@ export default function PublicCardPage() {
 
   const avatar = card ? toMediaSrc(fieldStr(card.fields, "avatar")) : "";
   const company = card ? fieldStr(card.fields, "company") : "";
-  const visibleFields = card
-    ? Object.keys(FIELD_LABELS).filter(
-        (k) => k !== "company" && fieldStr(card.fields, k),
-      )
-    : [];
   const customLinks = card ? parseCustomLinks(card.fields) : [];
+  const actions = card ? buildActionLinks(card.fields, customLinks) : [];
   const displayName =
     card?.display_name?.trim() || card?.title?.trim() || "MyCartao";
   const headline = card?.headline?.trim() || company;
@@ -86,29 +151,33 @@ export default function PublicCardPage() {
       data-theme={theme}
     >
       <div className="card-theme-surface min-h-screen">
-        <header className="mx-auto flex w-full max-w-lg items-center justify-between px-6 py-5">
+        <header className="mx-auto flex w-full max-w-md items-center justify-between px-5 py-5">
           {showBrand ? (
             <Link
               href="/"
-              className="font-display text-lg font-semibold tracking-tight"
+              className="font-display text-base font-semibold tracking-tight opacity-80 transition hover:opacity-100"
             >
               MyCartao
             </Link>
           ) : (
-            <span className="font-display text-lg font-semibold tracking-tight">
+            <span className="font-display text-base font-semibold tracking-tight">
               {displayName}
             </span>
           )}
           <Link
             href={`/c/${slugOrId}/presence`}
-            className="text-sm font-medium transition opacity-80 hover:opacity-100"
-            style={{ color: "var(--card-accent)" }}
+            className="rounded-full px-3 py-1 text-xs font-semibold transition opacity-80 hover:opacity-100"
+            style={{
+              color: "var(--card-accent)",
+              background:
+                "color-mix(in srgb, var(--card-accent) 12%, transparent)",
+            }}
           >
-            Presence Mode
+            Presence
           </Link>
         </header>
 
-        <main className="mx-auto max-w-lg px-6 pb-20">
+        <main className="mx-auto max-w-md px-5 pb-24">
           {error ? (
             <p role="alert" className="text-sm text-red-800">
               {error}
@@ -120,74 +189,67 @@ export default function PublicCardPage() {
           ) : null}
 
           {card ? (
-            <div className="animate-rise">
+            <div className="animate-rise flex flex-col items-center text-center">
               {avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatar}
                   alt=""
-                  className="mb-7 h-36 w-36 rounded-full object-cover ring-2 sm:h-40 sm:w-40"
+                  className="h-28 w-28 rounded-full object-cover ring-4 sm:h-32 sm:w-32"
                   style={{ ["--tw-ring-color" as string]: "var(--card-ring)" }}
                 />
               ) : (
                 <div
-                  className="mb-7 flex h-36 w-36 items-center justify-center rounded-full font-display text-4xl sm:h-40 sm:w-40"
+                  className="flex h-28 w-28 items-center justify-center rounded-full font-display text-4xl font-semibold sm:h-32 sm:w-32"
                   style={{
-                    background: "color-mix(in srgb, var(--card-accent) 18%, transparent)",
+                    background:
+                      "color-mix(in srgb, var(--card-accent) 18%, transparent)",
                     color: "var(--card-accent)",
                   }}
                 >
                   {displayName.slice(0, 1).toUpperCase()}
                 </div>
               )}
+
               <h1
-                className={`font-semibold tracking-tight sm:text-5xl ${
-                  theme === "bold" ? "font-sans text-4xl" : "font-display text-4xl"
+                className={`mt-6 font-semibold tracking-tight sm:text-4xl ${
+                  theme === "bold"
+                    ? "font-sans text-3xl"
+                    : "font-display text-3xl"
                 }`}
               >
                 {displayName}
               </h1>
               {headline ? (
-                <p className="animate-rise-delay mt-3 text-lg opacity-80">
+                <p className="animate-rise-delay mt-2 text-base opacity-75">
                   {headline}
                 </p>
               ) : null}
               {card.bio ? (
-                <p className="mt-4 text-base leading-relaxed opacity-75">
+                <p className="mt-4 max-w-sm text-sm leading-relaxed opacity-70">
                   {card.bio}
                 </p>
               ) : null}
 
-              {visibleFields.length > 0 ? (
-                <ul className="animate-rise-delay mt-10 space-y-1">
-                  {visibleFields.map((key) => (
-                    <li
-                      key={key}
-                      className="border-b py-3"
-                      style={{ borderColor: "var(--card-line)" }}
-                    >
-                      <p className="text-xs font-medium uppercase tracking-wide opacity-60">
-                        {FIELD_LABELS[key]}
-                      </p>
-                      <p className="mt-0.5">{fieldStr(card.fields, key)}</p>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-
-              {customLinks.length > 0 ? (
+              {/* One button per link — Linktree-style stack */}
+              {actions.length > 0 ? (
                 <nav
                   aria-label="Links"
-                  className="animate-rise-delay-2 mt-10 flex flex-col gap-2.5"
+                  className="animate-rise-delay mt-8 w-full space-y-3"
                 >
-                  {customLinks.map((link) => (
+                  {actions.map((link) => (
                     <a
                       key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block w-full border-b py-3.5 text-base font-semibold transition"
-                      style={{ borderColor: "var(--card-line)" }}
+                      href={link.href}
+                      {...(link.external
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
+                      className="flex w-full items-center justify-center rounded-xl border px-5 py-3.5 text-sm font-semibold transition hover:scale-[1.015] active:scale-[0.99]"
+                      style={{
+                        borderColor: "var(--card-line)",
+                        background:
+                          "color-mix(in srgb, var(--card-accent) 8%, transparent)",
+                      }}
                     >
                       {link.title}
                     </a>
@@ -195,20 +257,20 @@ export default function PublicCardPage() {
                 </nav>
               ) : null}
 
-              <div className="animate-rise-delay-2 mt-12 flex flex-col gap-3 sm:flex-row">
+              <div className="animate-rise-delay-2 mt-8 w-full">
                 <a
                   href={`/api/v1/public/cards/${slugOrId}/vcard.vcf`}
-                  className="inline-flex items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold text-white transition"
+                  className="flex w-full items-center justify-center rounded-xl px-5 py-3.5 text-sm font-semibold text-white transition hover:opacity-95"
                   style={{ background: "var(--card-accent)" }}
                 >
                   Salvar contato
                 </a>
                 <Link
                   href={`/p/${slugOrId}`}
-                  className="inline-flex items-center justify-center rounded-md border px-5 py-2.5 text-sm font-medium transition"
-                  style={{ borderColor: "var(--card-line)" }}
+                  className="mt-3 inline-block text-sm font-medium opacity-70 transition hover:opacity-100"
+                  style={{ color: "var(--card-accent)" }}
                 >
-                  Ver portfólio
+                  Ver portfólio →
                 </Link>
               </div>
             </div>

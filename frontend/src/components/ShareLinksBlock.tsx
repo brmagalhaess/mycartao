@@ -23,7 +23,7 @@ export function CopyableLink({ label, url, hint }: Props) {
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-medium text-ink">{label}</p>
         {hint ? <p className="text-xs text-ink-soft">{hint}</p> : null}
@@ -74,50 +74,43 @@ export default function ShareLinksBlock({
   isPro,
   origin,
 }: ShareBlockProps) {
-  const title = kind === "card" ? "Compartilhar cartão" : "Compartilhar portfólio";
+  const title = kind === "card" ? "Compartilhar" : "Compartilhar portfólio";
   const commonUrl = `${origin}${commonPath}`;
   const personalizedUrl =
     personalizedPath && origin ? `${origin}${personalizedPath}` : "";
 
+  // One link only: prefer personalized slug when available.
+  const primaryUrl = personalizedUrl || commonUrl;
+  const isPersonalized = Boolean(personalizedUrl);
+
   return (
-    <section className="space-y-5">
+    <section className="space-y-4">
       <div>
         <h2 className="section-title">{title}</h2>
         <p className="mt-1 text-sm text-ink-soft">
-          Link comum é grátis. Link com nome personalizado (slug) é Pro.
+          {isPersonalized
+            ? "Seu link personalizado — copie e compartilhe."
+            : "Seu link público. Com Pro, você pode usar um nome personalizado."}
         </p>
       </div>
 
       <CopyableLink
-        label="Link comum (grátis)"
-        url={commonUrl}
-        hint="Funciona em todos os planos"
+        label={isPersonalized ? "Seu link" : "Link do cartão"}
+        url={primaryUrl}
+        hint={isPersonalized ? "Slug Pro" : "Link comum"}
       />
 
-      {isPro && personalizedUrl ? (
-        <CopyableLink
-          label="Link personalizado (Pro)"
-          url={personalizedUrl}
-          hint="Seu slug"
-        />
-      ) : (
-        <div className="rounded-md border border-line bg-paper/50 px-4 py-3 text-sm text-ink-soft">
-          <p className="font-medium text-ink">Link personalizado (Pro)</p>
-          <p className="mt-1">
-            Defina um slug em Configurações para usar{" "}
-            <code className="text-xs text-teal-deep">
-              /{kind === "card" ? "c" : "p"}/seu-nome
-            </code>
-            .
-          </p>
+      {!isPersonalized ? (
+        <p className="text-sm text-ink-soft">
+          Quer um link com o seu nome?{" "}
           <Link
             href={isPro ? "/app/settings" : "/app/billing"}
-            className="mt-2 inline-block font-medium text-teal transition hover:text-teal-deep"
+            className="font-medium text-teal transition hover:text-teal-deep"
           >
             {isPro ? "Configurar slug →" : "Assinar Pro →"}
           </Link>
-        </div>
-      )}
+        </p>
+      ) : null}
     </section>
   );
 }
