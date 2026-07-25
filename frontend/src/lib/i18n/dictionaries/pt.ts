@@ -21,6 +21,40 @@ export const pt = {
     heroSub:
       "Um link com sua foto, contatos, portfólio e QR. Atualize uma vez — vale em todo lugar que você compartilhou.",
     heroNote: "Grátis para sempre no plano Free. Sem cartão de crédito.",
+    cardContact: "Contato",
+    cardSave: "Salvar contato",
+    personas: [
+      {
+        name: "Ana Silva",
+        role: "Designer de marca",
+        bio: "Crio identidades visuais para negócios que querem ser lembrados. Vamos conversar sobre a sua marca?",
+      },
+      {
+        name: "Bruno Costa",
+        role: "Fotógrafo",
+        bio: "Retratos e eventos com olhar documental. Meu portfólio completo está no meu cartão.",
+      },
+      {
+        name: "Carla Mendes",
+        role: "Advogada",
+        bio: "Direito empresarial descomplicado para pequenas empresas e startups.",
+      },
+      {
+        name: "Diego Rocha",
+        role: "Desenvolvedor",
+        bio: "Construo produtos web rápidos e escaláveis. Aberto a projetos freelance.",
+      },
+      {
+        name: "Elisa Franco",
+        role: "Arquiteta",
+        bio: "Projetos residenciais que unem estética e funcionalidade no dia a dia.",
+      },
+      {
+        name: "Felipe Nunes",
+        role: "Personal trainer",
+        bio: "Treinos personalizados presenciais e online. Agende uma avaliação gratuita.",
+      },
+    ] as Array<{ name: string; role: string; bio: string }>,
     worksEverywhere: "Funciona onde você já está",
     channels: ["WhatsApp", "E-mail", "QR Code", "Bio do Instagram", "NFC", "Assinatura"],
     updateOnceTitle: "Atualize uma vez, valha em todo lugar",

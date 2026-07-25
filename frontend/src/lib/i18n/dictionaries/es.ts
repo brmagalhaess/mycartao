@@ -23,6 +23,40 @@ export const es: Dictionary = {
     heroSub:
       "Un enlace con tu foto, contactos, portafolio y QR. Actualiza una vez — sigue correcto en todos los lugares donde lo compartiste.",
     heroNote: "Gratis para siempre en el plan Free. Sin tarjeta de crédito.",
+    cardContact: "Contacto",
+    cardSave: "Guardar contacto",
+    personas: [
+      {
+        name: "Ana Silva",
+        role: "Diseñadora de marca",
+        bio: "Creo identidades visuales para negocios que quieren ser recordados. ¿Hablamos de tu marca?",
+      },
+      {
+        name: "Bruno Costa",
+        role: "Fotógrafo",
+        bio: "Retratos y eventos con mirada documental. Mi portafolio completo está en mi tarjeta.",
+      },
+      {
+        name: "Carla Mendes",
+        role: "Abogada",
+        bio: "Derecho empresarial sin complicaciones para pymes y startups.",
+      },
+      {
+        name: "Diego Rocha",
+        role: "Desarrollador",
+        bio: "Construyo productos web rápidos y escalables. Abierto a proyectos freelance.",
+      },
+      {
+        name: "Elisa Franco",
+        role: "Arquitecta",
+        bio: "Proyectos residenciales que unen estética y funcionalidad en el día a día.",
+      },
+      {
+        name: "Felipe Nunes",
+        role: "Personal trainer",
+        bio: "Entrenamientos personalizados presenciales y online. Agenda una evaluación gratis.",
+      },
+    ] as Array<{ name: string; role: string; bio: string }>,
     worksEverywhere: "Funciona donde ya estás",
     channels: ["WhatsApp", "Email", "Código QR", "Bio de Instagram", "NFC", "Firma"],
     updateOnceTitle: "Actualiza una vez, vale en todas partes",

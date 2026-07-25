@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import LandingCardPreview from "@/components/LandingCardPreview";
-import LandingCarousel from "@/components/LandingCarousel";
+import LandingHeroCards from "@/components/LandingHeroCards";
 import LandingFaq from "@/components/LandingFaq";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getDictionary } from "@/lib/i18n";
@@ -55,44 +55,47 @@ export default async function HomePage() {
         </header>
 
         <main>
-          <section className="relative mx-auto w-full max-w-5xl px-6 pb-16 pt-16 text-center sm:px-8 lg:pt-24">
+          <section className="relative overflow-hidden border-b border-line/60 bg-gradient-to-br from-sand/60 via-paper to-mist/70">
             <div
               aria-hidden
-              className="pointer-events-none absolute left-1/2 top-4 h-72 w-72 -translate-x-1/2 rounded-full bg-teal/10 blur-3xl"
+              className="pointer-events-none absolute -right-24 top-10 h-80 w-80 rounded-full bg-teal/10 blur-3xl"
             />
-            <p className="animate-rise inline-flex items-center rounded-full border border-line bg-paper/70 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-teal">
-              {t.badge}
-            </p>
-            <h1 className="animate-rise mx-auto mt-6 max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight sm:text-6xl lg:text-7xl">
-              {t.heroTitle}
-            </h1>
-            <p className="animate-rise-delay mx-auto mt-6 max-w-xl text-lg leading-relaxed text-ink-soft/90">
-              {t.heroSub}
-            </p>
-            <div className="animate-rise-delay-2 mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center rounded-md bg-teal px-7 py-3.5 text-base font-semibold text-paper transition hover:bg-teal-deep"
-              >
-                {c.startFree}
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center rounded-md border border-line bg-paper/60 px-7 py-3.5 text-base font-medium transition hover:border-teal/40 hover:bg-paper"
-              >
-                {c.seePlans}
-              </Link>
+            <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 pb-16 pt-14 sm:px-8 lg:grid-cols-[1fr_auto] lg:gap-16 lg:pb-24 lg:pt-20">
+              <div className="text-center lg:text-left">
+                <p className="animate-rise inline-flex items-center rounded-full border border-line bg-paper/70 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-teal">
+                  {t.badge}
+                </p>
+                <h1 className="animate-rise mt-6 font-display text-4xl font-semibold leading-tight tracking-tight sm:text-6xl lg:text-6xl xl:text-7xl">
+                  {t.heroTitle}
+                </h1>
+                <p className="animate-rise-delay mx-auto mt-6 max-w-xl text-lg leading-relaxed text-ink-soft/90 lg:mx-0">
+                  {t.heroSub}
+                </p>
+                <div className="animate-rise-delay-2 mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center justify-center rounded-md bg-teal px-7 py-3.5 text-base font-semibold text-paper transition hover:bg-teal-deep"
+                  >
+                    {c.startFree}
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center justify-center rounded-md border border-line bg-paper/60 px-7 py-3.5 text-base font-medium transition hover:border-teal/40 hover:bg-paper"
+                  >
+                    {c.seePlans}
+                  </Link>
+                </div>
+                <p className="animate-rise-delay-2 mt-4 text-sm text-ink-soft/75">
+                  {t.heroNote}
+                </p>
+              </div>
+              <div className="animate-rise-delay-2 w-full lg:w-auto">
+                <LandingHeroCards />
+              </div>
             </div>
-            <p className="animate-rise-delay-2 mt-4 text-sm text-ink-soft/75">
-              {t.heroNote}
-            </p>
           </section>
 
-          <section className="animate-rise-delay-2 w-full pb-16">
-            <LandingCarousel />
-          </section>
-
-          <section className="border-t border-line bg-paper/50">
+          <section className="bg-paper/50">
             <div className="mx-auto w-full max-w-6xl px-6 py-10 sm:px-8">
               <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-soft/60">
                 {t.worksEverywhere}
