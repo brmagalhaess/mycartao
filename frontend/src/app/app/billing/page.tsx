@@ -98,9 +98,12 @@ export default function BillingPage() {
           role="status"
           className="mt-6 rounded-md border border-amber-700/30 bg-amber-50 px-4 py-3 text-sm text-amber-950"
         >
-          Stripe em <strong>modo teste</strong>. Para cobrar de verdade,
-          configure <code className="text-xs">sk_live_…</code>, preço live e
-          webhook live no Dokploy.
+          A Stripe ainda está com chave de <strong>teste</strong> (
+          <code className="text-xs">sk_test_…</code>
+          ). O produto Pro foi criado no modo Teste no setup. Para cobrar de
+          verdade, no Dashboard Stripe (toggle <strong>Live</strong>) copie{" "}
+          <code className="text-xs">sk_live_…</code>, crie o preço Pro e o
+          webhook, e cole no Dokploy.
         </p>
       ) : null}
 
