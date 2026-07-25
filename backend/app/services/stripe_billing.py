@@ -32,14 +32,17 @@ def _require_stripe_api() -> None:
 
 
 def _resolve_price_id(db: Session, plan_id: UUID | None = None) -> tuple[str, str]:
-    """Return (stripe_price_id, plan_code)."""
-    from app.models.plan import Plan
+    """Return (stripe_price_id, plan_code).
+
+    ``STRIPE_PRICE_PRO`` (env) wins over a stale DB price so Live cutover
+    works even if ``plans.stripe_price_id`` still points at a test Price.
+    """
     from app.services import plans as plans_service
 
     plan = None
     if plan_id:
         plan = plans_service.get_plan(db, plan_id)
-        if not plan.is_active or not plan.stripe_price_id:
+        if not plan.is_active:
             raise AppError(
                 "Plano indisponível para checkout",
                 "plan_unavailable",
@@ -48,11 +51,11 @@ def _resolve_price_id(db: Session, plan_id: UUID | None = None) -> tuple[str, st
     else:
         plan = plans_service.get_default_checkout_plan(db)
 
+    if settings.stripe_price_pro:
+        return settings.stripe_price_pro, (plan.code if plan else "pro")
+
     if plan and plan.stripe_price_id:
         return plan.stripe_price_id, plan.code
-
-    if settings.stripe_price_pro:
-        return settings.stripe_price_pro, "pro"
 
     raise AppError(
         "Nenhum preço Stripe configurado",
@@ -61,25 +64,22 @@ def _resolve_price_id(db: Session, plan_id: UUID | None = None) -> tuple[str, st
     )
 
 
-def create_checkout_session(
-    db: Session, user: User, plan_id: UUID | None = None
-) -> str:
-    """Create a Stripe Checkout Session (subscription) and return its URL."""
-    _require_stripe_api()
-    price_id, plan_code = _resolve_price_id(db, plan_id)
+def _ensure_customer(db: Session, user: User) -> str:
+    if user.stripe_customer_id:
+        return user.stripe_customer_id
+    customer = stripe.Customer.create(
+        email=user.email,
+        metadata={"user_id": str(user.id)},
+    )
+    customer_id = customer["id"] if isinstance(customer, dict) else customer.id
+    user.stripe_customer_id = customer_id
+    db.commit()
+    return str(customer_id)
 
-    customer_id = user.stripe_customer_id
-    if not customer_id:
-        customer = stripe.Customer.create(
-            email=user.email,
-            metadata={"user_id": str(user.id)},
-        )
-        customer_id = customer["id"] if isinstance(customer, dict) else customer.id
-        user.stripe_customer_id = customer_id
-        db.commit()
 
+def _create_session(user: User, price_id: str, plan_code: str, customer_id: str):
     base = settings.public_app_url.rstrip("/")
-    session = stripe.checkout.Session.create(
+    return stripe.checkout.Session.create(
         mode="subscription",
         customer=customer_id,
         line_items=[{"price": price_id, "quantity": 1}],
@@ -91,6 +91,43 @@ def create_checkout_session(
         },
         client_reference_id=str(user.id),
     )
+
+
+def _stripe_error_message(exc: Exception) -> str:
+    msg = getattr(exc, "user_message", None) or getattr(exc, "message", None) or str(exc)
+    text = str(msg).strip() or "Erro na Stripe"
+    # Keep UI readable; Stripe messages can be long.
+    return text[:280]
+
+
+def create_checkout_session(
+    db: Session, user: User, plan_id: UUID | None = None
+) -> str:
+    """Create a Stripe Checkout Session (subscription) and return its URL."""
+    _require_stripe_api()
+    price_id, plan_code = _resolve_price_id(db, plan_id)
+
+    try:
+        customer_id = _ensure_customer(db, user)
+        try:
+            session = _create_session(user, price_id, plan_code, customer_id)
+        except stripe.InvalidRequestError as exc:
+            # Common after Test → Live: customer_id was created with sk_test_.
+            err = _stripe_error_message(exc).lower()
+            if user.stripe_customer_id and "no such customer" in err:
+                user.stripe_customer_id = None
+                db.commit()
+                customer_id = _ensure_customer(db, user)
+                session = _create_session(user, price_id, plan_code, customer_id)
+            else:
+                raise
+    except stripe.StripeError as exc:
+        raise AppError(
+            _stripe_error_message(exc),
+            "checkout_failed",
+            status_code=502,
+        ) from exc
+
     url = session["url"] if isinstance(session, dict) else session.url
     if not url:
         raise AppError("Falha ao criar sessão Stripe", "checkout_failed", status_code=502)

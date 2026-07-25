@@ -174,3 +174,102 @@ def test_checkout_returns_url_when_configured(
     assert kwargs["mode"] == "subscription"
     assert kwargs["metadata"]["user_id"]
     assert kwargs["line_items"][0]["price"] == "price_pro"
+
+
+@patch("app.services.stripe_billing.stripe.checkout.Session.create")
+@patch("app.services.stripe_billing.stripe.Customer.create")
+def test_checkout_env_price_overrides_stale_db_price(
+    mock_customer_create, mock_session_create, auth_client_free, monkeypatch
+):
+    from app.db import SessionLocal
+    from app.services import plans as plans_service
+    from app.services import stripe_billing as sb
+
+    db = SessionLocal()
+    try:
+        plans_service.ensure_pro_plan(db, stripe_price_id="price_test_old")
+    finally:
+        db.close()
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    monkeypatch.setattr(sb.settings, "app_env", "production")
+    monkeypatch.setattr(sb.settings, "stripe_price_pro", "price_live_new")
+    monkeypatch.setattr(sb.settings, "public_app_url", "https://example.com")
+
+    mock_customer_create.return_value = {"id": "cus_live"}
+    mock_session_create.return_value = MagicMock(url="https://checkout.stripe.com/s")
+
+    r = auth_client_free.post("/api/v1/billing/checkout")
+    assert r.status_code == 200
+    assert mock_session_create.call_args.kwargs["line_items"][0]["price"] == (
+        "price_live_new"
+    )
+
+
+@patch("app.services.stripe_billing.stripe.checkout.Session.create")
+@patch("app.services.stripe_billing.stripe.Customer.create")
+def test_checkout_retries_when_test_customer_missing_in_live(
+    mock_customer_create, mock_session_create, auth_client_free, monkeypatch
+):
+    import stripe
+    from app.db import SessionLocal
+    from app.models.user import User
+    from app.services import stripe_billing as sb
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "free@example.com").one()
+        user.stripe_customer_id = "cus_test_stale"
+        db.commit()
+    finally:
+        db.close()
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    monkeypatch.setattr(sb.settings, "app_env", "production")
+    monkeypatch.setattr(sb.settings, "stripe_price_pro", "price_live")
+    monkeypatch.setattr(sb.settings, "public_app_url", "https://example.com")
+
+    mock_customer_create.return_value = {"id": "cus_live_new"}
+    mock_session_create.side_effect = [
+        stripe.InvalidRequestError("No such customer: 'cus_test_stale'", param="customer"),
+        MagicMock(url="https://checkout.stripe.com/ok"),
+    ]
+
+    r = auth_client_free.post("/api/v1/billing/checkout")
+    assert r.status_code == 200
+    assert r.json()["url"] == "https://checkout.stripe.com/ok"
+    assert mock_session_create.call_count == 2
+    assert mock_customer_create.called
+
+
+@patch("app.services.stripe_billing.stripe.checkout.Session.create")
+def test_checkout_surfaces_stripe_error(mock_session_create, auth_client_free, monkeypatch):
+    import stripe
+    from app.services import stripe_billing as sb
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    monkeypatch.setattr(sb.settings, "app_env", "production")
+    monkeypatch.setattr(sb.settings, "stripe_price_pro", "price_live")
+    monkeypatch.setattr(sb.settings, "public_app_url", "https://example.com")
+
+    # Force customer path with pre-set id so Session.create is hit first.
+    from app.db import SessionLocal
+    from app.models.user import User
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "free@example.com").one()
+        user.stripe_customer_id = "cus_ok"
+        db.commit()
+    finally:
+        db.close()
+
+    mock_session_create.side_effect = stripe.InvalidRequestError(
+        "No such price: 'price_test'", param="line_items[0][price]"
+    )
+
+    r = auth_client_free.post("/api/v1/billing/checkout")
+    assert r.status_code == 502
+    body = r.json()
+    assert body["code"] == "checkout_failed"
+    assert "price" in body["detail"].lower()

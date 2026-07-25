@@ -58,13 +58,22 @@ export default function BillingPage() {
       }
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as {
-          detail?: string;
+          detail?: string | { msg?: string }[] | { message?: string };
           code?: string;
         } | null;
+        const detail =
+          typeof data?.detail === "string"
+            ? data.detail
+            : Array.isArray(data?.detail)
+              ? data.detail.map((d) => d.msg ?? JSON.stringify(d)).join("; ")
+              : typeof data?.detail === "object" && data.detail
+                ? (data.detail.message ?? JSON.stringify(data.detail))
+                : null;
         setError(
           data?.code === "stripe_test_mode"
             ? "Pagamentos ainda em modo teste. Configure a Stripe live no servidor."
-            : (data?.detail ?? "Não foi possível iniciar o checkout."),
+            : (detail ??
+              `Não foi possível iniciar o checkout (HTTP ${res.status}).`),
         );
         return;
       }
