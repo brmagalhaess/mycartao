@@ -45,8 +45,8 @@ export default function DevelopersPage() {
             Developers
           </h1>
           <p className="animate-rise-delay mt-4 max-w-2xl text-lg leading-relaxed text-ink-soft/90">
-            Exiba o avatar do perfil MyCartao pelo e-mail cadastrado — como o
-            Gravatar, sem plano Pro. Endpoint:{" "}
+            Exiba o avatar do perfil MyCartao pelo e-mail cadastrado — grátis,
+            sem plano Pro. Endpoint:{" "}
             <code className="rounded bg-paper/80 px-1.5 py-0.5 text-sm text-teal-deep">
               GET /api/v1/public/avatar?email=&amp;s=
             </code>

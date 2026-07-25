@@ -50,7 +50,7 @@ export const pt = {
     ],
     devTitle: "Para desenvolvedores",
     devText:
-      "Avatar público por e-mail, estilo Gravatar — grátis, sem chave de API.",
+      "Avatar público por e-mail em uma URL simples — grátis, sem chave de API.",
     devCta: "Ver documentação",
     faqTitle: "Perguntas frequentes",
     faq: [
@@ -87,7 +87,7 @@ export const pt = {
       "1 cartão digital",
       "Link comum do cartão e portfólio (por ID)",
       "QR + Presence Mode",
-      "API de avatar (estilo Gravatar)",
+      "API pública de avatar",
       "Portfólio com até 3 itens",
       "Analytics 7 dias",
       "Print PDF com watermark",

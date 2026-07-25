@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import LandingAvatars from "@/components/LandingAvatars";
 import LandingCardPreview from "@/components/LandingCardPreview";
+import LandingCarousel from "@/components/LandingCarousel";
 import LandingFaq from "@/components/LandingFaq";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getDictionary } from "@/lib/i18n";
@@ -86,9 +86,10 @@ export default async function HomePage() {
             <p className="animate-rise-delay-2 mt-4 text-sm text-ink-soft/75">
               {t.heroNote}
             </p>
-            <div className="animate-rise-delay-2 mt-14">
-              <LandingAvatars />
-            </div>
+          </section>
+
+          <section className="animate-rise-delay-2 w-full pb-16">
+            <LandingCarousel />
           </section>
 
           <section className="border-t border-line bg-paper/50">

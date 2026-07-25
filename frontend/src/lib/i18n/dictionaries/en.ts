@@ -51,7 +51,7 @@ export const en: Dictionary = {
       },
     ],
     devTitle: "For developers",
-    devText: "Public avatar by email, Gravatar-style — free, no API key.",
+    devText: "Public avatar by email from a simple URL — free, no API key.",
     devCta: "Read the docs",
     faqTitle: "Frequently asked questions",
     faq: [
@@ -88,7 +88,7 @@ export const en: Dictionary = {
       "1 digital card",
       "Standard card and portfolio link (by ID)",
       "QR + Presence Mode",
-      "Avatar API (Gravatar-style)",
+      "Public avatar API",
       "Portfolio with up to 3 items",
       "7-day analytics",
       "Print PDF with watermark",

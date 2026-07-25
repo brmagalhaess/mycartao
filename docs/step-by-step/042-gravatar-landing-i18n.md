@@ -51,6 +51,14 @@ Todos passando (build de produção OK).
 - Página `/developers` segue em PT (conteúdo técnico).
 - `metadata` (title/description) por idioma + `og:image`.
 
+## Revisão pós-feedback (mesma noite)
+- **Zero menção a concorrente**: “estilo Gravatar” removido dos dicionários
+  (pt/en/es), de `/developers` e de `/app/api` — agora “API pública de avatar”.
+- **Carrossel no lugar dos chips**: `LandingCarousel.tsx` mostra mini-cartões do
+  sistema (avatar, botões, Salvar contato e QR) de 6 perfis fictícios, rolando em
+  marquee CSS infinito com fade nas bordas e pausa no hover. `LandingAvatars.tsx`
+  foi removido. Keyframes novos em `globals.css` (`marquee-scroll`).
+
 ## Análise
 Cookie + Accept-Language evita reestruturar rotas (sem /en/...) e funciona com o
 proxy same-origin já usado no Dokploy. O dicionário PT é a fonte de tipo

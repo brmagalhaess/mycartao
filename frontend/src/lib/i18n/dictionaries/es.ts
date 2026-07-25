@@ -52,7 +52,7 @@ export const es: Dictionary = {
     ],
     devTitle: "Para desarrolladores",
     devText:
-      "Avatar público por email, estilo Gravatar — gratis, sin clave de API.",
+      "Avatar público por email desde una URL simple — gratis, sin clave de API.",
     devCta: "Ver documentación",
     faqTitle: "Preguntas frecuentes",
     faq: [
@@ -89,7 +89,7 @@ export const es: Dictionary = {
       "1 tarjeta digital",
       "Enlace estándar de tarjeta y portafolio (por ID)",
       "QR + Presence Mode",
-      "API de avatar (estilo Gravatar)",
+      "API pública de avatar",
       "Portafolio con hasta 3 ítems",
       "Analytics de 7 días",
       "PDF de impresión con marca de agua",

@@ -73,9 +73,8 @@ export default function AvatarApiPage() {
         API de avatar
       </h1>
       <p className="mt-3 max-w-xl text-ink-soft">
-        Use a foto do seu MyCartao em outros sites e sistemas — no mesmo
-        espírito do Gravatar. Basta o e-mail da conta. Sem chave de API e sem
-        plano Pro.
+        Use a foto do seu MyCartao em outros sites e sistemas. Basta o e-mail
+        da conta. Sem chave de API e sem plano Pro.
       </p>
 
       {error ? (
