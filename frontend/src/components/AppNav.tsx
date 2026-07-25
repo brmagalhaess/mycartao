@@ -4,15 +4,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/components/I18nProvider";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const NAV = [
-  { href: "/app", label: "Cartões" },
-  { href: "/app/portfolio", label: "Portfólio" },
-  { href: "/app/api", label: "API Avatar" },
-  { href: "/app/smart", label: "Smart" },
-  { href: "/app/analytics", label: "Analytics" },
-  { href: "/app/billing", label: "Cobrança" },
-  { href: "/app/settings", label: "Configurações" },
+  { href: "/app", key: "cards" },
+  { href: "/app/portfolio", key: "portfolio" },
+  { href: "/app/api", key: "avatarApi" },
+  { href: "/app/smart", key: "smart" },
+  { href: "/app/analytics", key: "analytics" },
+  { href: "/app/billing", key: "billing" },
+  { href: "/app/settings", key: "settings" },
 ] as const;
 
 function isActivePath(pathname: string, href: string): boolean {
@@ -25,6 +27,7 @@ function isActivePath(pathname: string, href: string): boolean {
 export default function AppNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { dict } = useI18n();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -66,7 +69,7 @@ export default function AppNav() {
                 : "text-ink-soft transition hover:text-teal"
             }
           >
-            {item.label}
+            {dict.appNav[item.key]}
           </Link>
         );
       })}
@@ -80,16 +83,17 @@ export default function AppNav() {
               : "text-ink-soft transition hover:text-teal"
           }
         >
-          Admin
+          {dict.appNav.admin}
         </Link>
       ) : null}
+      <LanguageSwitcher compact />
       <button
         type="button"
         onClick={onLogout}
         disabled={loggingOut}
         className="text-ink-soft/70 transition hover:text-ink disabled:opacity-60"
       >
-        {loggingOut ? "Saindo…" : "Sair"}
+        {loggingOut ? dict.common.loggingOut : dict.common.logout}
       </button>
     </nav>
   );

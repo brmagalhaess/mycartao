@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/components/I18nProvider";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function LoginPage() {
+  const { dict } = useI18n();
+  const t = dict.login;
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">(
     "idle",
@@ -27,21 +31,15 @@ export default function LoginPage() {
           detail?: string;
         } | null;
         setStatus("error");
-        setMessage(
-          data?.detail ?? "Não foi possível enviar o link. Tente de novo.",
-        );
+        setMessage(data?.detail ?? t.sendError);
         return;
       }
 
       setStatus("sent");
-      setMessage(
-        "Link enviado. Abra o e-mail e clique para entrar na sua conta.",
-      );
+      setMessage(t.sent);
     } catch {
       setStatus("error");
-      setMessage(
-        "Não foi possível falar com o servidor. Atualize a página e tente de novo.",
-      );
+      setMessage(t.networkError);
     }
   }
 
@@ -55,17 +53,20 @@ export default function LoginPage() {
           >
             MyCartao
           </Link>
-          <Link href="/pricing" className="text-sm font-medium text-ink-soft">
-            Preços
-          </Link>
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher compact />
+            <Link href="/pricing" className="text-sm font-medium text-ink-soft">
+              {dict.common.pricing}
+            </Link>
+          </div>
         </header>
 
         <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 pb-16">
           <h1 className="animate-rise font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            Entrar com magic link
+            {t.title}
           </h1>
           <p className="animate-rise-delay mt-3 max-w-md text-ink-soft/90">
-            Sem senha. Enviamos um link único para o seu e-mail.
+            {t.lead}
           </p>
 
           <form
@@ -73,7 +74,7 @@ export default function LoginPage() {
             className="animate-rise-delay-2 mt-8 space-y-4"
           >
             <label className="block text-sm font-medium text-ink-soft">
-              E-mail
+              {t.email}
               <input
                 type="email"
                 required
@@ -89,7 +90,7 @@ export default function LoginPage() {
               disabled={status === "loading"}
               className="w-full rounded-md bg-teal px-4 py-3 text-base font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
             >
-              {status === "loading" ? "Enviando…" : "Enviar link de acesso"}
+              {status === "loading" ? t.sending : t.submit}
             </button>
           </form>
 

@@ -1,0 +1,139 @@
+import type { Dictionary } from "./pt";
+
+export const es: Dictionary = {
+  common: {
+    login: "Entrar",
+    logout: "Salir",
+    loggingOut: "Saliendo…",
+    pricing: "Precios",
+    developers: "Developers",
+    features: "Funciones",
+    language: "Idioma",
+    loading: "Cargando…",
+    copy: "Copiar",
+    copied: "¡Copiado!",
+    viewCard: "Ver tarjeta",
+    viewPortfolio: "Ver portafolio",
+    startFree: "Crear mi tarjeta gratis",
+    seePlans: "Ver planes",
+  },
+  landing: {
+    badge: "Tarjeta de presentación digital",
+    heroTitle: "Tu pasaporte digital.",
+    heroSub:
+      "Un enlace con tu foto, contactos, portafolio y QR. Actualiza una vez — sigue correcto en todos los lugares donde lo compartiste.",
+    heroNote: "Gratis para siempre en el plan Free. Sin tarjeta de crédito.",
+    worksEverywhere: "Funciona donde ya estás",
+    channels: ["WhatsApp", "Email", "Código QR", "Bio de Instagram", "NFC", "Firma"],
+    updateOnceTitle: "Actualiza una vez, vale en todas partes",
+    updateOnceText:
+      "¿Nuevo teléfono, cargo o empresa? Edita tu tarjeta y todos los enlaces, QRs y etiquetas NFC que ya compartiste siguen correctos — nada que reimprimir.",
+    profileTitle: "Tu perfil, a tu manera",
+    profileText:
+      "Temas, color de marca y botones personalizados. La gente toca “Guardar contacto” y entras en su agenda con el nombre y la empresa correctos.",
+    portfolioTitle: "Tu portafolio es tu página",
+    portfolioText:
+      "Proyectos, servicios y precios en una página pública lista para compartir — en el mismo enlace de tu tarjeta.",
+    portfolioCta: "Crear mi página",
+    stepsTitle: "Cómo funciona",
+    steps: [
+      {
+        title: "Crea tu tarjeta",
+        text: "Foto, nombre, contactos y tema en minutos. Sin diseño, sin código.",
+      },
+      {
+        title: "Comparte en segundos",
+        text: "Un enlace, un QR o el Presence Mode a pantalla completa — desde tu móvil.",
+      },
+      {
+        title: "Conviértete en contacto guardado",
+        text: "Un toque en “Guardar contacto” y estás en la agenda de quien importa.",
+      },
+    ],
+    devTitle: "Para desarrolladores",
+    devText:
+      "Avatar público por email, estilo Gravatar — gratis, sin clave de API.",
+    devCta: "Ver documentación",
+    faqTitle: "Preguntas frecuentes",
+    faq: [
+      {
+        q: "¿MyCartao es gratis?",
+        a: "Sí. El plan Free incluye tarjeta con QR, Presence Mode, portafolio de 3 ítems y la API de avatar. Pro (R$ 19,90/mes) añade slug personalizado, Smart Card, analytics de 90 días y quita el branding.",
+      },
+      {
+        q: "¿Necesito instalar una app?",
+        a: "No. Todo funciona en el navegador — el tuyo y el de quien recibe la tarjeta. El QR abre directo desde la cámara del móvil.",
+      },
+      {
+        q: "¿Cómo guardan mi contacto?",
+        a: "Abren tu enlace y tocan “Guardar contacto”. Se descarga un vCard con tu nombre, empresa, teléfonos y enlaces — directo a la agenda de iPhone o Android.",
+      },
+      {
+        q: "¿Qué es Smart Card?",
+        a: "Un único enlace que decide el destino por reglas: en horario laboral va a WhatsApp, fuera de él a tu portafolio. Disponible en Pro.",
+      },
+      {
+        q: "¿Puedo cancelar cuando quiera?",
+        a: "Sí. La suscripción Pro es mensual vía Stripe y puede cancelarse en cualquier momento — tu tarjeta sigue en el plan Free.",
+      },
+    ],
+    finalCta: "Tu próximo contacto empieza con un enlace.",
+  },
+  pricing: {
+    title: "Precios simples",
+    lead: "Empieza gratis. Pasa a Pro cuando necesites slug, analytics largos y Smart Card.",
+    perMonth: "/mes",
+    freeCta: "Crear cuenta gratis",
+    proCta: "Suscribirse a Pro",
+    free: [
+      "1 tarjeta digital",
+      "Enlace estándar de tarjeta y portafolio (por ID)",
+      "QR + Presence Mode",
+      "API de avatar (estilo Gravatar)",
+      "Portafolio con hasta 3 ítems",
+      "Analytics de 7 días",
+      "PDF de impresión con marca de agua",
+    ],
+    pro: [
+      "Tarjetas ilimitadas",
+      "Enlace personalizado (slug) en tarjeta y portafolio",
+      "Enlaces personalizados (botones) en la tarjeta",
+      "Smart Card con reglas",
+      "Sin marca de agua + Print Kit",
+      "Portafolio ilimitado",
+      "Analytics de 90 días + export",
+      "Sin branding MyCartao",
+    ],
+  },
+  login: {
+    title: "Entrar con magic link",
+    lead: "Sin contraseña. Enviamos un enlace único a tu email.",
+    email: "Email",
+    submit: "Enviar enlace",
+    sending: "Enviando…",
+    sent: "Enlace enviado. Abre el email y haz clic para entrar en tu cuenta.",
+    sendError: "No se pudo enviar el enlace. Inténtalo de nuevo.",
+    networkError:
+      "No se pudo contactar el servidor. Actualiza la página e inténtalo de nuevo.",
+  },
+  appNav: {
+    cards: "Tarjetas",
+    portfolio: "Portafolio",
+    avatarApi: "API Avatar",
+    smart: "Smart",
+    analytics: "Analytics",
+    billing: "Facturación",
+    settings: "Ajustes",
+    admin: "Admin",
+  },
+  publicPortfolio: {
+    title: "Portafolio",
+    lead: "Proyectos y servicios públicos.",
+    empty: "Nada publicado todavía.",
+    notFound: "Portafolio no encontrado.",
+    loadError: "Error al cargar el portafolio.",
+    service: "Servicio",
+    project: "Proyecto",
+    copyLink: "Copiar enlace de la página",
+  },
+};

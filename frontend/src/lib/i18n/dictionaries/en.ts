@@ -1,0 +1,137 @@
+import type { Dictionary } from "./pt";
+
+export const en: Dictionary = {
+  common: {
+    login: "Sign in",
+    logout: "Sign out",
+    loggingOut: "Signing out…",
+    pricing: "Pricing",
+    developers: "Developers",
+    features: "Features",
+    language: "Language",
+    loading: "Loading…",
+    copy: "Copy",
+    copied: "Copied!",
+    viewCard: "View card",
+    viewPortfolio: "View portfolio",
+    startFree: "Create my free card",
+    seePlans: "See plans",
+  },
+  landing: {
+    badge: "Digital business card",
+    heroTitle: "Your digital passport.",
+    heroSub:
+      "One link with your photo, contacts, portfolio and QR. Update once — it stays right everywhere you shared it.",
+    heroNote: "Free forever on the Free plan. No credit card required.",
+    worksEverywhere: "Works where you already are",
+    channels: ["WhatsApp", "Email", "QR Code", "Instagram bio", "NFC", "Signature"],
+    updateOnceTitle: "Update once, right everywhere",
+    updateOnceText:
+      "New phone, role or company? Edit your card and every link, QR and NFC tag you've already shared stays correct — nothing to reprint.",
+    profileTitle: "Your profile, your way",
+    profileText:
+      "Themes, brand color and custom buttons. People tap “Save contact” and you land in their address book with the right name and company.",
+    portfolioTitle: "Your portfolio is your page",
+    portfolioText:
+      "Projects, services and prices on a public page ready to share — on the same link as your card.",
+    portfolioCta: "Create my page",
+    stepsTitle: "How it works",
+    steps: [
+      {
+        title: "Create your card",
+        text: "Photo, name, contacts and theme in minutes. No design, no code.",
+      },
+      {
+        title: "Share in seconds",
+        text: "A link, a QR or full-screen Presence Mode — right from your phone.",
+      },
+      {
+        title: "Become a saved contact",
+        text: "One tap on “Save contact” and you're in the address book of people who matter.",
+      },
+    ],
+    devTitle: "For developers",
+    devText: "Public avatar by email, Gravatar-style — free, no API key.",
+    devCta: "Read the docs",
+    faqTitle: "Frequently asked questions",
+    faq: [
+      {
+        q: "Is MyCartao free?",
+        a: "Yes. The Free plan includes a card with QR, Presence Mode, a 3-item portfolio and the avatar API. Pro (R$ 19.90/mo) adds a custom slug, Smart Card, 90-day analytics and removes branding.",
+      },
+      {
+        q: "Do I need to install an app?",
+        a: "No. Everything runs in the browser — yours and your contact's. The QR opens straight from the phone camera.",
+      },
+      {
+        q: "How do people save my contact?",
+        a: "They open your link and tap “Save contact”. A vCard downloads with your name, company, phones and links — straight to the iPhone or Android address book.",
+      },
+      {
+        q: "What is Smart Card?",
+        a: "A single link that routes by rules: during business hours it goes to WhatsApp, after hours to your portfolio. Available on Pro.",
+      },
+      {
+        q: "Can I cancel anytime?",
+        a: "Yes. The Pro subscription is monthly via Stripe and can be cancelled anytime — your card stays on the Free plan.",
+      },
+    ],
+    finalCta: "Your next contact starts with a link.",
+  },
+  pricing: {
+    title: "Simple pricing",
+    lead: "Start free. Upgrade to Pro when you need a slug, longer analytics and Smart Card.",
+    perMonth: "/mo",
+    freeCta: "Create free account",
+    proCta: "Subscribe to Pro",
+    free: [
+      "1 digital card",
+      "Standard card and portfolio link (by ID)",
+      "QR + Presence Mode",
+      "Avatar API (Gravatar-style)",
+      "Portfolio with up to 3 items",
+      "7-day analytics",
+      "Print PDF with watermark",
+    ],
+    pro: [
+      "Unlimited cards",
+      "Custom link (slug) for card and portfolio",
+      "Custom links (buttons) on the card",
+      "Smart Card with rules",
+      "No watermark + Print Kit",
+      "Unlimited portfolio",
+      "90-day analytics + export",
+      "No MyCartao branding",
+    ],
+  },
+  login: {
+    title: "Sign in with magic link",
+    lead: "No password. We send a one-time link to your email.",
+    email: "Email",
+    submit: "Send link",
+    sending: "Sending…",
+    sent: "Link sent. Open the email and click to sign in to your account.",
+    sendError: "Could not send the link. Please try again.",
+    networkError: "Could not reach the server. Refresh the page and try again.",
+  },
+  appNav: {
+    cards: "Cards",
+    portfolio: "Portfolio",
+    avatarApi: "Avatar API",
+    smart: "Smart",
+    analytics: "Analytics",
+    billing: "Billing",
+    settings: "Settings",
+    admin: "Admin",
+  },
+  publicPortfolio: {
+    title: "Portfolio",
+    lead: "Public projects and services.",
+    empty: "Nothing published yet.",
+    notFound: "Portfolio not found.",
+    loadError: "Failed to load the portfolio.",
+    service: "Service",
+    project: "Project",
+    copyLink: "Copy page link",
+  },
+};
