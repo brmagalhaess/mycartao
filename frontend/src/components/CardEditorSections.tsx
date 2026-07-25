@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import ThemePicker from "@/components/ThemePicker";
+import type { CardTheme } from "@/lib/card-theme";
 
 const FIELD_KEYS = [
   { key: "phone", label: "Telefone" },
@@ -10,12 +11,6 @@ const FIELD_KEYS = [
   { key: "website", label: "Site" },
   { key: "linkedin", label: "LinkedIn" },
   { key: "instagram", label: "Instagram" },
-] as const;
-
-const THEMES = [
-  { value: "minimal", label: "Minimal" },
-  { value: "classic", label: "Clássico" },
-  { value: "bold", label: "Bold" },
 ] as const;
 
 type ProfileSectionProps = {
@@ -131,38 +126,31 @@ export function ContactsSection({
 }
 
 type ThemeSectionProps = {
-  theme: string;
-  onTheme: (value: string) => void;
+  theme: CardTheme;
+  onTheme: (value: CardTheme) => void;
+  isPro: boolean;
+  brandColor?: string;
 };
 
-export function ThemeSection({ theme, onTheme }: ThemeSectionProps) {
+export function ThemeSection({
+  theme,
+  onTheme,
+  isPro,
+  brandColor,
+}: ThemeSectionProps) {
   return (
     <section className="space-y-4 border-t border-line pt-8">
       <h2 className="section-title">Tema</h2>
       <p className="text-sm text-ink-soft">
-        Ajuste rápido. Aparência completa (temas Pro, cor da marca e link) fica
-        em Configurações.
+        Escolha o visual do cartão público. Temas Areia e Ink + cor da marca
+        estão no plano Pro.
       </p>
-      <label className="block text-sm font-medium text-ink-soft">
-        Visual do cartão
-        <select
-          value={theme}
-          onChange={(e) => onTheme(e.target.value)}
-          className="input-field"
-        >
-          {THEMES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <Link
-        href="/app/settings"
-        className="inline-block text-sm font-medium text-teal hover:text-teal-deep"
-      >
-        Abrir Configurações →
-      </Link>
+      <ThemePicker
+        theme={theme}
+        onTheme={onTheme}
+        isPro={isPro}
+        brandColor={brandColor}
+      />
     </section>
   );
 }

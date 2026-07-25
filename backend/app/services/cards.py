@@ -148,6 +148,9 @@ def to_public_card_response(card: Card) -> PublicCardResponse:
         theme=(profile.theme if profile else None) or "minimal",
         brand_color=brand,
         show_mycartao_branding=plan not in PRO_PLANS,
+        lead_capture_enabled=(
+            bool(getattr(profile, "lead_capture_enabled", True)) if profile else False
+        ),
     )
 
 

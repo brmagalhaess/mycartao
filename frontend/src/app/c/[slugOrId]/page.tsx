@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { apiFetch, toMediaSrc } from "@/lib/api";
 import { parseCustomLinks, type CustomLink } from "@/lib/custom-links";
+import LeadCaptureForm from "@/components/LeadCaptureForm";
 import { themeStyleVars, type CardTheme } from "@/lib/card-theme";
 import { isPublicToolId } from "@/lib/public-tools";
 
@@ -19,6 +20,7 @@ type PublicCard = {
   theme?: string | null;
   brand_color?: string | null;
   show_mycartao_branding?: boolean;
+  lead_capture_enabled?: boolean;
 };
 
 type ActionLink = {
@@ -291,6 +293,9 @@ export default function PublicCardPage() {
                 >
                   Salvar contato
                 </a>
+                {card.lead_capture_enabled !== false ? (
+                  <LeadCaptureForm slugOrId={slugOrId} source="card" />
+                ) : null}
                 <Link
                   href={`/p/${slugOrId}`}
                   className="mt-3 inline-block text-sm font-medium opacity-70 transition hover:opacity-100"

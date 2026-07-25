@@ -10,6 +10,7 @@ from app.api.v1 import (
     billing,
     cards,
     exports,
+    leads,
     me,
     media,
     portfolio,
@@ -23,6 +24,8 @@ api_router.include_router(cards.router, prefix="/cards", tags=["cards"])
 api_router.include_router(exports.router, prefix="/cards", tags=["exports"])
 api_router.include_router(cards.public_router, prefix="/public/cards", tags=["public"])
 api_router.include_router(exports.public_router, prefix="/public/cards", tags=["public"])
+api_router.include_router(leads.public_router, prefix="/public/cards", tags=["public"])
+api_router.include_router(leads.router, prefix="/leads", tags=["leads"])
 api_router.include_router(media.router, prefix="/media", tags=["media"])
 api_router.include_router(
     avatar.public_router, prefix="/public/avatar", tags=["public"]

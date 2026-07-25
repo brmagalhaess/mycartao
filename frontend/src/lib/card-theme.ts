@@ -1,9 +1,9 @@
 export type CardTheme = "minimal" | "classic" | "bold" | "sand" | "ink";
 
 export const FREE_THEMES: { value: CardTheme; label: string; blurb: string }[] = [
-  { value: "minimal", label: "Minimal", blurb: "Limpo e claro" },
-  { value: "classic", label: "Clássico", blurb: "Mais tipografia e linhas" },
-  { value: "bold", label: "Bold", blurb: "Contraste forte" },
+  { value: "minimal", label: "Minimal", blurb: "Limpo, branco e teal" },
+  { value: "classic", label: "Clássico", blurb: "Papel creme e tipografia" },
+  { value: "bold", label: "Bold", blurb: "Alto contraste e blocos" },
 ];
 
 export const PRO_THEMES: { value: CardTheme; label: string; blurb: string }[] = [
@@ -21,25 +21,25 @@ export function themeStyleVars(
 
   const bases: Record<CardTheme, Record<string, string>> = {
     minimal: {
-      "--card-bg": "#faf8f5",
+      "--card-bg": "#ffffff",
       "--card-fg": "#0c2a2e",
       "--card-accent": brand || "#0f766e",
-      "--card-line": "rgba(12, 42, 46, 0.12)",
-      "--card-ring": "#e8d5b5",
+      "--card-line": "rgba(12, 42, 46, 0.10)",
+      "--card-ring": brand || "#99f6e4",
     },
     classic: {
-      "--card-bg": "#f7f3eb",
-      "--card-fg": "#1a2e32",
-      "--card-accent": brand || "#0a5550",
-      "--card-line": "rgba(12, 42, 46, 0.22)",
+      "--card-bg": "#f3ebe0",
+      "--card-fg": "#2a1f14",
+      "--card-accent": brand || "#8b5a2b",
+      "--card-line": "rgba(42, 31, 20, 0.28)",
       "--card-ring": "#d4b896",
     },
     bold: {
-      "--card-bg": "#eef5f3",
-      "--card-fg": "#042f2e",
-      "--card-accent": brand || "#0f766e",
-      "--card-line": "rgba(4, 47, 46, 0.18)",
-      "--card-ring": "#0f766e",
+      "--card-bg": "#042f2e",
+      "--card-fg": "#ecfdf5",
+      "--card-accent": brand || "#2dd4bf",
+      "--card-line": "rgba(236, 253, 245, 0.22)",
+      "--card-ring": brand || "#2dd4bf",
     },
     sand: {
       "--card-bg": "#f3e6d4",

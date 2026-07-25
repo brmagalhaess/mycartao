@@ -66,7 +66,7 @@ def update_profile(db: Session, user: User, data: ProfileUpdate) -> Profile:
     return profile
 
 
-def set_slug(db: Session, user: User, slug: str) -> Profile:
+def set_slug(db: Session, user: User, slug: str | None) -> Profile:
     if user.plan not in PRO_PLANS:
         raise AppError(
             "Slug personalizado requer plano Pro",
@@ -74,7 +74,16 @@ def set_slug(db: Session, user: User, slug: str) -> Profile:
             status_code=403,
         )
 
-    normalized = (slug or "").strip().lower()
+    profile = get_profile_for_user(db, user)
+
+    # null / empty clears the personalized slug (back to UUID links).
+    if slug is None or str(slug).strip() == "":
+        profile.slug = None
+        db.commit()
+        db.refresh(profile)
+        return profile
+
+    normalized = str(slug).strip().lower()
     if not SLUG_RE.fullmatch(normalized):
         raise AppError(
             "Slug inválido. Use 3–32 caracteres: a-z, 0-9 e hífen.",
@@ -90,7 +99,6 @@ def set_slug(db: Session, user: User, slug: str) -> Profile:
     if taken is not None:
         raise AppError("Slug já está em uso", "invalid_slug", status_code=400)
 
-    profile = get_profile_for_user(db, user)
     profile.slug = normalized
     try:
         db.commit()

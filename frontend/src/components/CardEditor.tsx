@@ -10,12 +10,14 @@ import {
 } from "@/lib/custom-links";
 import CustomLinksEditor from "@/components/CustomLinksEditor";
 import ShareLinksBlock from "@/components/ShareLinksBlock";
+import CardLivePreview from "@/components/CardLivePreview";
 import {
   ContactsSection,
   FIELD_KEYS,
   ProfileSection,
   ThemeSection,
 } from "@/components/CardEditorSections";
+import type { CardTheme } from "@/lib/card-theme";
 
 type Card = {
   id: string;
@@ -30,6 +32,7 @@ type Profile = {
   display_name: string | null;
   headline: string | null;
   theme: string | null;
+  brand_color: string | null;
   avatar_key: string | null;
   slug: string | null;
 };
@@ -78,7 +81,8 @@ export default function CardEditor({ cardId }: Props) {
   const [title, setTitle] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [headline, setHeadline] = useState("");
-  const [theme, setTheme] = useState("minimal");
+  const [theme, setTheme] = useState<CardTheme>("minimal");
+  const [brandColor, setBrandColor] = useState("#0f766e");
   const [fields, setFields] = useState<Record<string, string>>({});
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [plan, setPlan] = useState("free");
@@ -133,7 +137,8 @@ export default function CardEditor({ cardId }: Props) {
       setSlug(profile.slug);
       setDisplayName(profile.display_name ?? "");
       setHeadline(profile.headline ?? "");
-      setTheme(profile.theme ?? "minimal");
+      setTheme((profile.theme as CardTheme) || "minimal");
+      setBrandColor(profile.brand_color ?? "#0f766e");
       setFields(
         Object.fromEntries(
           FIELD_KEYS.map(({ key }) => [key, strField(card.fields, key)]),
@@ -334,53 +339,71 @@ export default function CardEditor({ cardId }: Props) {
         </Link>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-10 max-w-xl space-y-0">
-        <ProfileSection
-          title={title}
-          displayName={displayName}
-          headline={headline}
-          avatarPreview={avatarPreview}
-          uploading={uploading}
-          onTitle={setTitle}
-          onDisplayName={setDisplayName}
-          onHeadline={setHeadline}
-          onUpload={onUpload}
-        />
-
-        <ContactsSection fields={fields} onUpdateField={updateField} />
-
-        <div className="border-t border-line pt-8">
-          <CustomLinksEditor
-            links={customLinks}
-            onChange={setCustomLinks}
-            disabled={!isPro}
-            isPro={isPro}
+      <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <form onSubmit={onSubmit} className="max-w-xl space-y-0">
+          <ProfileSection
+            title={title}
+            displayName={displayName}
+            headline={headline}
+            avatarPreview={avatarPreview}
+            uploading={uploading}
+            onTitle={setTitle}
+            onDisplayName={setDisplayName}
+            onHeadline={setHeadline}
+            onUpload={onUpload}
           />
-        </div>
 
-        <ThemeSection theme={theme} onTheme={setTheme} />
+          <ContactsSection fields={fields} onUpdateField={updateField} />
 
-        <div className="border-t border-line pt-8">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-md bg-teal px-5 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
-          >
-            {saving ? "Salvando…" : "Salvar alterações"}
-          </button>
+          <div className="border-t border-line pt-8">
+            <CustomLinksEditor
+              links={customLinks}
+              onChange={setCustomLinks}
+              disabled={!isPro}
+              isPro={isPro}
+            />
+          </div>
 
-          {message ? (
-            <p role="status" className="mt-4 text-sm text-teal-deep">
-              {message}
-            </p>
-          ) : null}
-          {error ? (
-            <p role="alert" className="mt-4 text-sm text-red-800">
-              {error}
-            </p>
-          ) : null}
-        </div>
-      </form>
+          <ThemeSection
+            theme={theme}
+            onTheme={setTheme}
+            isPro={isPro}
+            brandColor={brandColor}
+          />
+
+          <div className="border-t border-line pt-8">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-md bg-teal px-5 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
+            >
+              {saving ? "Salvando…" : "Salvar alterações"}
+            </button>
+
+            {message ? (
+              <p role="status" className="mt-4 text-sm text-teal-deep">
+                {message}
+              </p>
+            ) : null}
+            {error ? (
+              <p role="alert" className="mt-4 text-sm text-red-800">
+                {error}
+              </p>
+            ) : null}
+          </div>
+        </form>
+
+        <aside className="lg:sticky lg:top-8 lg:self-start">
+          <p className="mb-3 text-sm font-medium text-ink-soft">Preview ao vivo</p>
+          <CardLivePreview
+            displayName={displayName || title}
+            headline={headline}
+            avatarUrl={avatarPreview}
+            theme={theme}
+            brandColor={isPro ? brandColor : null}
+          />
+        </aside>
+      </div>
 
       {origin ? (
         <div className="mt-14 max-w-xl border-t border-line pt-10">

@@ -5,7 +5,7 @@ from typing import Optional
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -25,6 +25,9 @@ class Profile(Base):
     theme: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     brand_color: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     slug: Mapped[Optional[str]] = mapped_column(String(80), unique=True, nullable=True, index=True)
+    lead_capture_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -36,4 +39,7 @@ class Profile(Base):
     )
     smart_rules = relationship(
         "SmartRule", back_populates="profile", cascade="all, delete-orphan"
+    )
+    leads = relationship(
+        "Lead", back_populates="profile", cascade="all, delete-orphan"
     )

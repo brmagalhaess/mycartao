@@ -45,7 +45,11 @@ def test_set_slug_integrity_error_maps_to_invalid_slug():
 
     profile = MagicMock()
     profile.user_id = 99
-    db.query.return_value.filter.return_value.one_or_none.side_effect = [None, profile]
+    # get_profile_for_user → profile; uniqueness check → None
+    db.query.return_value.filter.return_value.one_or_none.side_effect = [
+        profile,
+        None,
+    ]
     db.commit.side_effect = IntegrityError(
         "INSERT",
         {},
@@ -58,6 +62,20 @@ def test_set_slug_integrity_error_maps_to_invalid_slug():
     assert exc_info.value.code == "invalid_slug"
     assert exc_info.value.status_code == 400
     db.rollback.assert_called_once()
+
+
+def test_pro_can_clear_slug(auth_client_pro):
+    assert auth_client_pro.patch("/api/v1/me/slug", json={"slug": "to-clear"}).status_code == 200
+    r = auth_client_pro.patch("/api/v1/me/slug", json={"slug": None})
+    assert r.status_code == 200
+    assert r.json()["slug"] is None
+
+
+def test_pro_can_clear_slug_with_empty_string(auth_client_pro):
+    assert auth_client_pro.patch("/api/v1/me/slug", json={"slug": "empty-clear"}).status_code == 200
+    r = auth_client_pro.patch("/api/v1/me/slug", json={"slug": ""})
+    assert r.status_code == 200
+    assert r.json()["slug"] is None
 
 
 def test_slug_must_be_unique(auth_client_pro):

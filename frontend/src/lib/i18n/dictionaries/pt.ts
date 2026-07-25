@@ -153,6 +153,7 @@ export const pt = {
     portfolio: "Portfólio",
     avatarApi: "Avatar",
     smart: "Smart",
+    leads: "Leads",
     analytics: "Analytics",
     billing: "Assinatura",
     settings: "Configurações",

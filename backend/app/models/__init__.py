@@ -2,6 +2,7 @@ from app.models.analytics import CardView
 from app.models.auth_token import MagicLinkToken
 from app.models.billing import Subscription
 from app.models.card import Card
+from app.models.lead import Lead
 from app.models.media import MediaAsset
 from app.models.plan import Plan
 from app.models.portfolio import PortfolioItem
@@ -20,4 +21,5 @@ __all__ = [
     "Subscription",
     "SmartRule",
     "Plan",
+    "Lead",
 ]

@@ -155,6 +155,7 @@ export const es: Dictionary = {
     portfolio: "Portafolio",
     avatarApi: "Avatar",
     smart: "Smart",
+    leads: "Leads",
     analytics: "Analytics",
     billing: "Suscripción",
     settings: "Ajustes",

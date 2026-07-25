@@ -75,6 +75,22 @@ body {
   color: var(--card-fg, var(--ink));
 }
 
+.card-theme-classic .card-theme-surface {
+  background-image: linear-gradient(
+    180deg,
+    rgba(139, 90, 43, 0.06),
+    transparent 40%
+  );
+}
+
+.card-theme-bold .card-theme-surface {
+  background-image: radial-gradient(
+    ellipse at 80% 0%,
+    rgba(45, 212, 191, 0.22),
+    transparent 55%
+  );
+}
+
 .card-theme-ink .card-theme-surface {
   background-image: radial-gradient(
     ellipse at 20% 0%,

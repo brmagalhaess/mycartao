@@ -12,6 +12,7 @@ type NavKey =
   | "portfolio"
   | "avatarApi"
   | "smart"
+  | "leads"
   | "analytics"
   | "billing"
   | "settings"
@@ -42,6 +43,13 @@ const ICONS: Record<NavKey, ReactNode> = {
   smart: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
       <path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H13L13 2Z" />
+    </svg>
+  ),
+  leads: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="3.5" />
+      <path d="M19 8v6M22 11h-6" />
     </svg>
   ),
   analytics: (
@@ -77,6 +85,7 @@ const NAV: ReadonlyArray<{ href: string; key: NavKey }> = [
   { href: "/app/portfolio", key: "portfolio" },
   { href: "/app/api", key: "avatarApi" },
   { href: "/app/smart", key: "smart" },
+  { href: "/app/leads", key: "leads" },
   { href: "/app/analytics", key: "analytics" },
   { href: "/app/billing", key: "billing" },
   { href: "/app/settings", key: "settings" },

@@ -39,3 +39,4 @@ class PublicCardResponse(CardResponse):
     theme: Optional[str] = None
     brand_color: Optional[str] = None
     show_mycartao_branding: bool = True
+    lead_capture_enabled: bool = True
