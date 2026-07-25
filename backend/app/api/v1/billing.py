@@ -47,6 +47,16 @@ def create_checkout(
     return {"url": url}
 
 
+@router.post("/sync")
+def sync_billing(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Reconcile plan from Stripe — fallback when a webhook was missed."""
+    plan = stripe_billing.sync_subscription_from_stripe(db, user)
+    return {"plan": plan}
+
+
 @router.post("/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.body()

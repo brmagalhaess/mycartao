@@ -134,6 +134,51 @@ def create_checkout_session(
     return url
 
 
+def sync_subscription_from_stripe(db: Session, user: User) -> str:
+    """Reconcile the user's plan straight from Stripe.
+
+    Fallback for missed webhooks (e.g. endpoint misconfigured at payment time).
+    Returns the resulting plan.
+    """
+    _require_stripe_api()
+    if not user.stripe_customer_id:
+        return user.plan
+
+    try:
+        subs = stripe.Subscription.list(
+            customer=user.stripe_customer_id, status="all", limit=10
+        )
+    except stripe.StripeError as exc:
+        raise AppError(
+            _stripe_error_message(exc), "billing_sync_failed", status_code=502
+        ) from exc
+
+    data = subs.get("data", []) if isinstance(subs, dict) else list(subs.data)
+    best: dict | None = None
+    for raw in data:
+        obj = _obj(raw)
+        if obj.get("status") in ACTIVE_STATUSES:
+            best = obj
+            break
+        if best is None:
+            best = obj
+    if best is None or not best.get("id"):
+        return user.plan
+
+    status = str(best.get("status") or "")
+    meta = best.get("metadata") or {}
+    _upsert_subscription(
+        db,
+        user,
+        stripe_subscription_id=str(best["id"]),
+        status=status,
+        current_period_end=best.get("current_period_end"),
+    )
+    _apply_plan(user, status, plan_code=meta.get("plan_code"))
+    db.commit()
+    return user.plan
+
+
 def _obj(data: Any) -> dict:
     if isinstance(data, dict):
         return data

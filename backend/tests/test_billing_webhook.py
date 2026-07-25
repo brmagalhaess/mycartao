@@ -242,6 +242,95 @@ def test_checkout_retries_when_test_customer_missing_in_live(
     assert mock_customer_create.called
 
 
+@patch("app.services.stripe_billing.stripe.Subscription.list")
+def test_sync_upgrades_plan_from_active_subscription(
+    mock_sub_list, auth_client_free, monkeypatch
+):
+    from app.db import SessionLocal
+    from app.models.user import User
+    from app.services import stripe_billing as sb
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "free@example.com").one()
+        user.stripe_customer_id = "cus_live"
+        db.commit()
+    finally:
+        db.close()
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    monkeypatch.setattr(sb.settings, "app_env", "production")
+
+    mock_sub_list.return_value = {
+        "data": [
+            {
+                "id": "sub_live_1",
+                "status": "active",
+                "customer": "cus_live",
+                "current_period_end": 1893456000,
+                "metadata": {"plan_code": "pro", "user_id": "x"},
+            }
+        ]
+    }
+
+    r = auth_client_free.post("/api/v1/billing/sync")
+    assert r.status_code == 200
+    assert r.json()["plan"] == "pro"
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "free@example.com").one()
+        assert user.plan == "pro"
+    finally:
+        db.close()
+
+
+def test_sync_without_customer_keeps_plan(auth_client_free, monkeypatch):
+    from app.services import stripe_billing as sb
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    monkeypatch.setattr(sb.settings, "app_env", "production")
+
+    r = auth_client_free.post("/api/v1/billing/sync")
+    assert r.status_code == 200
+    assert r.json()["plan"] == "free"
+
+
+@patch("app.services.stripe_billing.stripe.Subscription.list")
+def test_sync_canceled_subscription_downgrades(
+    mock_sub_list, auth_client_pro, monkeypatch
+):
+    from app.db import SessionLocal
+    from app.models.user import User
+    from app.services import stripe_billing as sb
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "pro@example.com").one()
+        user.stripe_customer_id = "cus_live2"
+        db.commit()
+    finally:
+        db.close()
+
+    monkeypatch.setattr(sb.settings, "stripe_secret_key", "sk_live_x")
+    monkeypatch.setattr(sb.settings, "app_env", "production")
+
+    mock_sub_list.return_value = {
+        "data": [
+            {
+                "id": "sub_live_2",
+                "status": "canceled",
+                "customer": "cus_live2",
+                "metadata": {},
+            }
+        ]
+    }
+
+    r = auth_client_pro.post("/api/v1/billing/sync")
+    assert r.status_code == 200
+    assert r.json()["plan"] == "free"
+
+
 @patch("app.services.stripe_billing.stripe.checkout.Session.create")
 def test_checkout_surfaces_stripe_error(mock_session_create, auth_client_free, monkeypatch):
     import stripe

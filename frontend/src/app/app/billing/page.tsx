@@ -25,6 +25,17 @@ export default function BillingPage() {
         setStatus((await statusRes.json()) as BillingStatus);
       }
 
+      // Back from Stripe Checkout: reconcile plan before reading it,
+      // so the page reflects Pro even if the webhook was missed.
+      const fromCheckout =
+        typeof window !== "undefined" &&
+        new URLSearchParams(window.location.search).get("success") === "1";
+      if (fromCheckout) {
+        await apiFetch("/api/v1/billing/sync", { method: "POST" }).catch(
+          () => null,
+        );
+      }
+
       const res = await apiFetch("/api/v1/auth/whoami");
       if (res.status === 401) {
         router.replace("/login");
@@ -44,6 +55,36 @@ export default function BillingPage() {
       cancelled = true;
     };
   }, [router]);
+
+  async function syncPlan() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await apiFetch("/api/v1/billing/sync", { method: "POST" });
+      if (res.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          detail?: string;
+        } | null;
+        setError(data?.detail ?? "Não foi possível sincronizar a assinatura.");
+        return;
+      }
+      const data = (await res.json()) as { plan: string };
+      setPlan(data.plan);
+      if (data.plan === "free") {
+        setError(
+          "Nenhuma assinatura ativa encontrada na Stripe para sua conta.",
+        );
+      }
+    } catch {
+      setError("Falha de rede ao sincronizar.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function subscribe() {
     setLoading(true);
@@ -150,14 +191,24 @@ export default function BillingPage() {
                 Desbloqueie slug, cartões ilimitados, analytics 90 dias e sem
                 watermark.
               </p>
-              <button
-                type="button"
-                onClick={subscribe}
-                disabled={loading || stripeTest}
-                className="mt-8 inline-flex rounded-md bg-teal px-6 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
-              >
-                {loading ? "Redirecionando…" : "Assinar Pro"}
-              </button>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={subscribe}
+                  disabled={loading || stripeTest}
+                  className="inline-flex rounded-md bg-teal px-6 py-3 text-sm font-semibold text-paper transition hover:bg-teal-deep disabled:opacity-60"
+                >
+                  {loading ? "Aguarde…" : "Assinar Pro"}
+                </button>
+                <button
+                  type="button"
+                  onClick={syncPlan}
+                  disabled={loading}
+                  className="inline-flex rounded-md border border-line px-6 py-3 text-sm font-medium text-ink transition hover:border-teal/40 disabled:opacity-60"
+                >
+                  Já paguei — atualizar
+                </button>
+              </div>
               {stripeTest ? (
                 <p className="mt-3 text-xs text-ink-soft">
                   Botão desativado enquanto a Stripe estiver em teste no
