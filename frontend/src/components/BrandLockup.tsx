@@ -9,7 +9,7 @@ type Props = {
 const SIZES = { sm: 28, md: 32 } as const;
 
 /** Bump when mark SVG changes so browsers drop cached favicon/logo. */
-const MARK_SRC = "/brand/logo-mark.svg?v=3";
+const MARK_SRC = "/brand/logo-mark.svg?v=4";
 
 export default function BrandLockup({
   href,
