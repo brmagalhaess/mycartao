@@ -8,6 +8,9 @@ type Props = {
 
 const SIZES = { sm: 28, md: 32 } as const;
 
+/** Bump when mark SVG changes so browsers drop cached favicon/logo. */
+const MARK_SRC = "/brand/logo-mark.svg?v=3";
+
 export default function BrandLockup({
   href,
   size = "md",
@@ -21,11 +24,11 @@ export default function BrandLockup({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/brand/logo-mark.svg"
+        src={MARK_SRC}
         alt=""
         width={px}
         height={px}
-        className="shrink-0"
+        className="shrink-0 rounded-[22%]"
       />
       <span className={size === "sm" ? "text-lg" : "text-xl"}>MyCartao</span>
     </Link>
