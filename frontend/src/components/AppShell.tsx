@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { apiFetch } from "@/lib/api";
+import BrandLockup from "@/components/BrandLockup";
 import { useI18n } from "@/components/I18nProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
@@ -186,12 +187,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* Sidebar — desktop */}
         <aside className="sticky top-0 hidden h-screen flex-col border-r border-line bg-paper/80 backdrop-blur-md lg:flex">
           <div className="px-5 pb-2 pt-6">
-            <Link
-              href="/app"
-              className="font-display text-xl font-semibold tracking-tight text-ink transition hover:text-teal-deep"
-            >
-              MyCartao
-            </Link>
+            <BrandLockup href="/app" size="md" />
           </div>
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
             <NavItems vertical />
@@ -206,12 +202,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="lg:hidden">
           <header className="sticky top-0 z-20 border-b border-line bg-paper/85 backdrop-blur-md">
             <div className="flex items-center justify-between px-5 pb-2 pt-3.5">
-              <Link
-                href="/app"
-                className="font-display text-lg font-semibold tracking-tight text-ink"
-              >
-                MyCartao
-              </Link>
+              <BrandLockup href="/app" size="sm" />
               <div className="flex items-center gap-3">
                 <LanguageSwitcher compact />
                 <LogoutButton className="flex items-center gap-1.5 text-sm font-medium text-ink-soft disabled:opacity-60" />
