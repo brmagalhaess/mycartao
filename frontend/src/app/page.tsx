@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import BrandLockup from "@/components/BrandLockup";
 import LandingCardPreview from "@/components/LandingCardPreview";
 import LandingHeroCards from "@/components/LandingHeroCards";
 import LandingFaq from "@/components/LandingFaq";
@@ -18,12 +19,7 @@ export default async function HomePage() {
       <div className="atmosphere-pattern min-h-screen">
         <header className="sticky top-0 z-20 border-b border-line/60 bg-paper/80 backdrop-blur">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4 sm:px-8">
-            <Link
-              href="/"
-              className="font-display text-lg font-semibold tracking-tight"
-            >
-              MyCartao
-            </Link>
+            <BrandLockup href="/" size="sm" />
             <nav className="flex items-center gap-4 text-sm font-medium sm:gap-5">
               <a
                 href="#recursos"
